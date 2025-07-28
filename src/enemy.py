@@ -31,6 +31,7 @@ class SquidEnemy(Enemy):
     super().__init__(position, color, size, speed, point)
 
 
+STEP_INTERVAL = 0.5
 class EnemyFormation:
   def __init__(self, left_limit: float, right_limit: float, move_down_distance: float, enemies: list[list[Enemy]]) -> None:
     self.horizontal_direction = 1
@@ -38,14 +39,50 @@ class EnemyFormation:
     self.right_limit = right_limit
     self.move_down_distance = move_down_distance
     self.enemies = enemies
+    self.current_step = STEP_INTERVAL
 
-  def auto_move_horizontally(self, delta_time: float):
+  def move_by_step(self):
+    if self.current_step > 0:
+      return
+    
+    for row in self.enemies:
+      for enemy in row:
+          enemy.move_horizontally(enemy.size[0] * self.horizontal_direction)
+
+    if (self.is_past_horizontal_bound()):
+      self.reverse_direction()
+      self.move_down()
+    self.current_step = STEP_INTERVAL
+
+  def move_by_delta_time(self, delta_time: float):
     for row in self.enemies:
       for enemy in row:
         enemy.move_horizontally(enemy.speed * delta_time * self.horizontal_direction)
+
+    if (self.is_past_horizontal_bound()):
+      self.reverse_direction()
+      self.move_down()
+       
+  def auto_move(self, delta_time: float | None = None):
+    if (delta_time is None):
+      self.move_by_step()
+    else:
+      self.move_by_delta_time(delta_time)
+    
+
+  def move_down(self) -> None:
+    for row in self.enemies:
+      for enemy in row:
+          enemy.move_vertically(distance=self.move_down_distance)
+
+  def reverse_direction(self) -> None:
+      self.horizontal_direction *=-1  
   
-  def is_past_bound(self) -> bool:
-    pos_list = list(map((lambda enemy: enemy.rect.x), sum(self.enemies,[])))
+  def is_past_horizontal_bound(self) -> bool:
+    enemy_list = list(map((lambda enemy: enemy.rect.x), sum(self.enemies,[])))
+    if (len(enemy_list) == 0):
+      return False
+    pos_list = enemy_list
     curr_left = min(pos_list)
     curr_right = max(pos_list)
     if (curr_left <= self.left_limit):
@@ -54,10 +91,9 @@ class EnemyFormation:
         return True
     return False
   
-  def reverse_direction(self) -> None:
-    self.horizontal_direction *=-1
-
-  def move_down(self) -> None:
+  def collide_player(self, player):
     for row in self.enemies:
       for enemy in row:
-          enemy.move_vertically(distance=self.move_down_distance)
+          if (enemy.rect.colliderect(player)):
+            return True
+    return False
