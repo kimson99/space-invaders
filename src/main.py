@@ -1,6 +1,7 @@
 import pygame
 from player import Player
 from enemy import *
+from utils.spritesheet import SpriteSheet
 
 pygame.init()
 base_pixel_font = pygame.font.Font("./assets/fonts/ARCADECLASSIC.TTF", 26)
@@ -10,10 +11,14 @@ clock = pygame.time.Clock()
 running = True
 delta_time = 0
 is_game_over = False
+FPS = 60
 
+spritesheet = SpriteSheet('./assets/sprites/SpaceInvadersSpriteSheet.png')
 player_start_pos = pygame.Vector2(screen.get_width() / 2, screen.get_height() - 80)
-playable_area_offset = 4
-player = Player(player_start_pos)
+playable_area_offset = 10
+player_sprites = spritesheet.images_at(rects=[(1, 49, 16, 8)], colorkey=int(-1))
+player = Player(position=player_start_pos
+, sprites=player_sprites)
 
 enemy_row = 5
 enemy_col = 5
@@ -32,15 +37,22 @@ enemy_formation = EnemyFormation(
     enemy_start_pos=pygame.Vector2(5, screen.get_height() / 3),
     enemy_row = enemy_row,
     enemy_col = enemy_col,
-    enemy_formation_gap = 20   
+    enemy_formation_gap = 20,
+    spritesheet=spritesheet   
 )
+
+player_bullet_sprite = spritesheet.image_at(rectangle=(20, 20, 5, 10), colorkey=int(-1))
+
+enemy_bullet_sprite = spritesheet.image_at(rectangle=(1, 20, 5, 10) , colorkey=int(-1))
 
 while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
         if (event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE):
-            player.shoot()
+            bullet_pos = pygame.Vector2(x=player.rect.x + player.size[0] / 2, y=player.rect.y)
+            bullet = Bullet(position=bullet_pos, color="white", speed=500, sprite=player_bullet_sprite)
+            player.shoot(bullet)
 
     screen.fill("black")
 
@@ -80,7 +92,7 @@ while running:
         
     # Enemy
     enemy_formation.auto_move(delta_time=delta_time, mode="step")
-    enemy_formation.auto_shoot(delta_time=delta_time)
+    enemy_formation.auto_shoot(delta_time=delta_time, sprite=enemy_bullet_sprite)
     
     if (enemy_formation.collide_player(player)):
         player.lose_life()
@@ -101,7 +113,7 @@ while running:
 
     player.render(screen)
 
-    enemy_formation.render(screen)
+    enemy_formation.render(screen, delta_time=delta_time)
 
     screen.blit(score_surface, (0, 0))
     screen.blit(lives_surface, (screen.get_width() - lives_surface.get_width(), 0))
@@ -111,6 +123,6 @@ while running:
     pygame.display.flip()
 
     if not is_game_over:
-        delta_time = clock.tick(60)/1000
+        delta_time = clock.tick(FPS)/1000
 
 pygame.quit()

@@ -2,15 +2,25 @@ import pygame
 import random
 from typing import Literal
 from bullet import Bullet
+from utils.spritesheet import SpriteSheet
 
-class Enemy:
-  def __init__(self, position: pygame.Vector2, color: str, size: tuple[int, int], speed: float, point: float) -> None:
+class Enemy(pygame.sprite.Sprite):
+  def __init__(self, position: pygame.Vector2, color: str, size: tuple[int, int], speed: float, point: float, sprites: list[pygame.Surface]) -> None:
+    pygame.sprite.Sprite.__init__(self)
     self.position = position
     self.color = color
     self.size = size
     self.speed = speed
     self.point = point
-    self.rect = pygame.rect.Rect(self.position, self.size)
+
+    self.sprites = [pygame.transform.scale(sprite, size) for sprite in sprites]
+    self.max_sprites_index = len(self.sprites) - 1
+    self.curr_sprite_index = 0
+    self.rect = self.sprites[self.curr_sprite_index].get_rect()
+    self.rect.x = position.x
+    self.rect.y = position.y
+    
+    self.animation_interval = 0.5
 
   def move_horizontally(self, distance: float):
     self.rect.x += distance
@@ -18,20 +28,26 @@ class Enemy:
   def move_vertically(self, distance: float):
     self.rect.y += distance
 
-  def render(self, surface):
-    pygame.draw.rect(surface, color=self.color, rect=self.rect)
+  def render(self, surface: pygame.Surface, delta_time: float):
+    surface.blit(self.sprites[self.curr_sprite_index], self.rect)
+    if (self.animation_interval < 0):
+      self.curr_sprite_index +=1
+      self.animation_interval = 0.5
+    if (self.curr_sprite_index > self.max_sprites_index):
+       self.curr_sprite_index = 0
+    self.animation_interval -= delta_time
 
 class OctupusEnemy(Enemy):
-  def __init__(self, position: pygame.Vector2, color: str, size: tuple[int, int], speed: float, point = 10) -> None:
-    super().__init__(position, color, size, speed, point)
+  def __init__(self, position: pygame.Vector2, color: str, size: tuple[int, int], speed: float, sprites: list[pygame.Surface], point = 10, ) -> None:
+    super().__init__(position, color, size, speed, point, sprites)
 
 class CrabEnemy(Enemy):
-  def __init__(self, position: pygame.Vector2, color: str, size: tuple[int, int], speed: float, point = 20) -> None:
-    super().__init__(position, color, size, speed, point)
+  def __init__(self, position: pygame.Vector2, color: str, size: tuple[int, int], speed: float, sprites: list[pygame.Surface], point = 20) -> None:
+    super().__init__(position, color, size, speed, point, sprites)
 
 class SquidEnemy(Enemy):
-  def __init__(self, position: pygame.Vector2, color: str, size: tuple[int, int], speed: float, point = 30) -> None:
-    super().__init__(position, color, size, speed, point)
+  def __init__(self, position: pygame.Vector2, color: str, size: tuple[int, int], speed: float, sprites: list[pygame.Surface],point = 30) -> None:
+    super().__init__(position, color, size, speed, point, sprites)
 
 
 STEP_INTERVAL = 0.5
@@ -40,7 +56,13 @@ MAX_FIRING_COOLDOWN_TIME = 5
 ENEMY_MAX_BULLET = 3
 
 class EnemyFormation:
-  def __init__(self, left_limit: float, right_limit: float, move_down_distance: float, enemies: list[list[Enemy]], enemy_col: int = 11, enemy_row: int = 5, enemy_formation_gap: float = 20, enemy_size: tuple[float, float] = (40, 20), enemy_start_pos: pygame.Vector2 = pygame.Vector2(50, 50), enemy_speed: float = 10) -> None:
+  def __init__(self, 
+               left_limit: float, 
+               right_limit: float, 
+               move_down_distance: float, 
+               enemies: list[list[Enemy]], 
+               spritesheet: SpriteSheet,
+               enemy_col: int = 11, enemy_row: int = 5, enemy_formation_gap: float = 20, enemy_size: tuple[float, float] = (40, 20), enemy_start_pos: pygame.Vector2 = pygame.Vector2(50, 50), enemy_speed: float = 10) -> None:
     self.horizontal_direction = 1
     self.left_limit = left_limit
     self.right_limit = right_limit
@@ -50,6 +72,11 @@ class EnemyFormation:
     self.enemy_firing_cooldown: float = random.randint(MIN_FIRING_COOLDOWN_TIME, MAX_FIRING_COOLDOWN_TIME)
 
     self.bullets: list[Bullet] = []
+  
+    
+    octupus_sprites = spritesheet.images_at([(1, 1, 16, 8), (1, 11, 16, 8)], colorkey=int(-1))
+    crab_sprites = spritesheet.images_at([(19, 1, 16, 8), (19, 11, 16, 8)], colorkey=int(-1))
+    squid_sprites = spritesheet.images_at([(37, 1, 16, 8), (37, 11, 16, 8)], colorkey=int(-1))
 
     for col in range(0, enemy_col):
       horizontal_offset = col * enemy_formation_gap + col * enemy_size[0]
@@ -58,13 +85,13 @@ class EnemyFormation:
           x_pos = enemy_start_pos.x + horizontal_offset
           y_pos = enemy_start_pos.y - vertical_offset
           if row == 0 or row == 1:
-            enemies[col][row] = OctupusEnemy(pygame.Vector2(x_pos, y_pos), color='orange', size= enemy_size, speed=enemy_speed)
+            enemies[col][row] = OctupusEnemy(pygame.Vector2(x_pos, y_pos), color='orange', size= enemy_size, speed=enemy_speed, sprites=octupus_sprites)
           elif row == 2 or row == 3:
-            enemies[col][row] = CrabEnemy(pygame.Vector2(x_pos, y_pos), color='yellow', size= enemy_size, speed=enemy_speed)
+            enemies[col][row] = CrabEnemy(pygame.Vector2(x_pos, y_pos), color='yellow', size= enemy_size, speed=enemy_speed, sprites=crab_sprites)
           else:
-            enemies[col][row] = SquidEnemy(pygame.Vector2(x_pos, y_pos), color='pink', size= enemy_size, speed=enemy_speed)
+            enemies[col][row] = SquidEnemy(pygame.Vector2(x_pos, y_pos), color='pink', size= enemy_size, speed=enemy_speed,sprites=squid_sprites)
 
-  def auto_shoot(self, delta_time: float):
+  def auto_shoot(self, delta_time: float, sprite: pygame.Surface):
     for col in self.enemies:
         for i in range(0, len(col)):
             enemy = col[i]
@@ -72,7 +99,7 @@ class EnemyFormation:
                 can_shoot = bool(random.randint(0, 1))
                 if (can_shoot):
                     bullet_pos = pygame.Vector2(x=enemy.rect.x + enemy.size[0] / 2, y=enemy.rect.y)
-                    self.bullets.append(Bullet(bullet_pos, color="white", speed=100))
+                    self.bullets.append(Bullet(position=bullet_pos, color="white", speed=100, sprite=sprite))
                     self.enemy_firing_cooldown = random.randint(MIN_FIRING_COOLDOWN_TIME, MAX_FIRING_COOLDOWN_TIME)
 
     self.enemy_firing_cooldown -= delta_time
@@ -136,7 +163,7 @@ class EnemyFormation:
             return True
     return False
   
-  def render(self, surface: pygame.Surface):
+  def render(self, surface: pygame.Surface, delta_time: float):
     for col in self.enemies:
         for enemy in col:
-            enemy.render(surface)
+            enemy.render(surface, delta_time=delta_time)
