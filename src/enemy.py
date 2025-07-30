@@ -1,4 +1,7 @@
 import pygame
+import random
+from typing import Literal
+from bullet import Bullet
 
 class Enemy:
   def __init__(self, position: pygame.Vector2, color: str, size: tuple[int, int], speed: float, point: float) -> None:
@@ -32,17 +35,51 @@ class SquidEnemy(Enemy):
 
 
 STEP_INTERVAL = 0.5
+MIN_FIRING_COOLDOWN_TIME = 2
+MAX_FIRING_COOLDOWN_TIME = 5
+ENEMY_MAX_BULLET = 3
+
 class EnemyFormation:
-  def __init__(self, left_limit: float, right_limit: float, move_down_distance: float, enemies: list[list[Enemy]]) -> None:
+  def __init__(self, left_limit: float, right_limit: float, move_down_distance: float, enemies: list[list[Enemy]], enemy_col: int = 11, enemy_row: int = 5, enemy_formation_gap: float = 20, enemy_size: tuple[float, float] = (40, 20), enemy_start_pos: pygame.Vector2 = pygame.Vector2(50, 50), enemy_speed: float = 10) -> None:
     self.horizontal_direction = 1
     self.left_limit = left_limit
     self.right_limit = right_limit
     self.move_down_distance = move_down_distance
     self.enemies = enemies
     self.current_step = STEP_INTERVAL
+    self.enemy_firing_cooldown: float = random.randint(MIN_FIRING_COOLDOWN_TIME, MAX_FIRING_COOLDOWN_TIME)
 
-  def move_by_step(self):
+    self.bullets: list[Bullet] = []
+
+    for col in range(0, enemy_col):
+      horizontal_offset = col * enemy_formation_gap + col * enemy_size[0]
+      for row in range(0, enemy_row):
+          vertical_offset = row * enemy_formation_gap + row * enemy_size[1]
+          x_pos = enemy_start_pos.x + horizontal_offset
+          y_pos = enemy_start_pos.y - vertical_offset
+          if row == 0 or row == 1:
+            enemies[col][row] = OctupusEnemy(pygame.Vector2(x_pos, y_pos), color='orange', size= enemy_size, speed=enemy_speed)
+          elif row == 2 or row == 3:
+            enemies[col][row] = CrabEnemy(pygame.Vector2(x_pos, y_pos), color='yellow', size= enemy_size, speed=enemy_speed)
+          else:
+            enemies[col][row] = SquidEnemy(pygame.Vector2(x_pos, y_pos), color='pink', size= enemy_size, speed=enemy_speed)
+
+  def auto_shoot(self, delta_time: float):
+    for col in self.enemies:
+        for i in range(0, len(col)):
+            enemy = col[i]
+            if i == 0 and (len(self.bullets) < ENEMY_MAX_BULLET or len(self.bullets) == 0) and self.enemy_firing_cooldown < 0:
+                can_shoot = bool(random.randint(0, 1))
+                if (can_shoot):
+                    bullet_pos = pygame.Vector2(x=enemy.rect.x + enemy.size[0] / 2, y=enemy.rect.y)
+                    self.bullets.append(Bullet(bullet_pos, color="white", speed=100))
+                    self.enemy_firing_cooldown = random.randint(MIN_FIRING_COOLDOWN_TIME, MAX_FIRING_COOLDOWN_TIME)
+
+    self.enemy_firing_cooldown -= delta_time
+
+  def move_by_step(self,delta_time=float):
     if self.current_step > 0:
+      self.current_step -= delta_time
       return
     
     for row in self.enemies:
@@ -53,6 +90,7 @@ class EnemyFormation:
       self.reverse_direction()
       self.move_down()
     self.current_step = STEP_INTERVAL
+ 
 
   def move_by_delta_time(self, delta_time: float):
     for row in self.enemies:
@@ -63,9 +101,9 @@ class EnemyFormation:
       self.reverse_direction()
       self.move_down()
        
-  def auto_move(self, delta_time: float | None = None):
-    if (delta_time is None):
-      self.move_by_step()
+  def auto_move(self, delta_time: float = 0, mode: Literal["step", "delta"] = "step"):
+    if (mode == "step"):
+      self.move_by_step(delta_time=delta_time)
     else:
       self.move_by_delta_time(delta_time)
     
@@ -97,3 +135,8 @@ class EnemyFormation:
           if (enemy.rect.colliderect(player)):
             return True
     return False
+  
+  def render(self, surface: pygame.Surface):
+    for col in self.enemies:
+        for enemy in col:
+            enemy.render(surface)
