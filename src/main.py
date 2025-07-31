@@ -1,7 +1,7 @@
 import pygame
 from player import Player
 from enemy import *
-from utils.spritesheet import SpriteSheet
+from sprite_manager import SpriteManager
 
 pygame.init()
 base_pixel_font = pygame.font.Font("./assets/fonts/ARCADECLASSIC.TTF", 26)
@@ -13,10 +13,11 @@ delta_time = 0
 is_game_over = False
 FPS = 60
 
-spritesheet = SpriteSheet('./assets/sprites/SpaceInvadersSpriteSheet.png')
+sprite_manager = SpriteManager('./assets/sprites/SpaceInvadersSpriteSheet.png')
+
 player_start_pos = pygame.Vector2(screen.get_width() / 2, screen.get_height() - 80)
 playable_area_offset = 10
-player_sprites = spritesheet.images_at(rects=[(1, 49, 16, 8)], colorkey=int(-1))
+player_sprites = sprite_manager.get_sprites("player")
 player = Player(position=player_start_pos
 , sprites=player_sprites)
 
@@ -24,26 +25,26 @@ enemy_row = 5
 enemy_col = 5
 enemies: list[list[Enemy]] = [[None] * enemy_row for _ in range(0, enemy_col)]
 enemy_size = (40, 20)
-enemy_speed = 50
+enemy_speed = 10
 enemy_start_pos = pygame.Vector2(5, 50)
 
 enemy_formation = EnemyFormation(
     left_limit=0, 
     right_limit=screen.get_width(), 
-    move_down_distance=enemy_size[1] + 10, 
+    move_down_distance=10, 
     enemies=enemies, 
     enemy_size=(40, 20),
-    enemy_speed=20,
+    enemy_speed=enemy_speed,
     enemy_start_pos=pygame.Vector2(5, screen.get_height() / 3),
     enemy_row = enemy_row,
     enemy_col = enemy_col,
     enemy_formation_gap = 20,
-    spritesheet=spritesheet   
+    sprite_manager=sprite_manager  
 )
 
-player_bullet_sprite = spritesheet.image_at(rectangle=(20, 20, 5, 10), colorkey=int(-1))
+player_bullet_sprites = sprite_manager.get_sprites("player_bullet")
 
-enemy_bullet_sprite = spritesheet.image_at(rectangle=(1, 20, 5, 10) , colorkey=int(-1))
+enemy_bullet_sprites = sprite_manager.get_sprites("enemy_bullet")
 
 while running:
     for event in pygame.event.get():
@@ -51,7 +52,7 @@ while running:
             running = False
         if (event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE):
             bullet_pos = pygame.Vector2(x=player.rect.x + player.size[0] / 2, y=player.rect.y)
-            bullet = Bullet(position=bullet_pos, color="white", speed=500, sprite=player_bullet_sprite)
+            bullet = Bullet(position=bullet_pos, speed=500, sprites=player_bullet_sprites)
             player.shoot(bullet)
 
     screen.fill("black")
@@ -92,7 +93,7 @@ while running:
         
     # Enemy
     enemy_formation.auto_move(delta_time=delta_time, mode="step")
-    enemy_formation.auto_shoot(delta_time=delta_time, sprite=enemy_bullet_sprite)
+    enemy_formation.auto_shoot(delta_time=delta_time, sprites=enemy_bullet_sprites)
     
     if (enemy_formation.collide_player(player)):
         player.lose_life()

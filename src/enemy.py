@@ -2,7 +2,7 @@ import pygame
 import random
 from typing import Literal
 from bullet import Bullet
-from utils.spritesheet import SpriteSheet
+from sprite_manager import SpriteManager
 
 class Enemy(pygame.sprite.Sprite):
   def __init__(self, position: pygame.Vector2, color: str, size: tuple[int, int], speed: float, point: float, sprites: list[pygame.Surface]) -> None:
@@ -61,7 +61,7 @@ class EnemyFormation:
                right_limit: float, 
                move_down_distance: float, 
                enemies: list[list[Enemy]], 
-               spritesheet: SpriteSheet,
+               sprite_manager: SpriteManager,
                enemy_col: int = 11, enemy_row: int = 5, enemy_formation_gap: float = 20, enemy_size: tuple[float, float] = (40, 20), enemy_start_pos: pygame.Vector2 = pygame.Vector2(50, 50), enemy_speed: float = 10) -> None:
     self.horizontal_direction = 1
     self.left_limit = left_limit
@@ -74,9 +74,9 @@ class EnemyFormation:
     self.bullets: list[Bullet] = []
   
     
-    octupus_sprites = spritesheet.images_at([(1, 1, 16, 8), (1, 11, 16, 8)], colorkey=int(-1))
-    crab_sprites = spritesheet.images_at([(19, 1, 16, 8), (19, 11, 16, 8)], colorkey=int(-1))
-    squid_sprites = spritesheet.images_at([(37, 1, 16, 8), (37, 11, 16, 8)], colorkey=int(-1))
+    octopus_sprites = sprite_manager.get_sprites('octopus_enemy')
+    crab_sprites = sprite_manager.get_sprites('crab_enemy')
+    squid_sprites = sprite_manager.get_sprites('squid_enemy')
 
     for col in range(0, enemy_col):
       horizontal_offset = col * enemy_formation_gap + col * enemy_size[0]
@@ -85,13 +85,13 @@ class EnemyFormation:
           x_pos = enemy_start_pos.x + horizontal_offset
           y_pos = enemy_start_pos.y - vertical_offset
           if row == 0 or row == 1:
-            enemies[col][row] = OctupusEnemy(pygame.Vector2(x_pos, y_pos), color='orange', size= enemy_size, speed=enemy_speed, sprites=octupus_sprites)
+            enemies[col][row] = OctupusEnemy(pygame.Vector2(x_pos, y_pos), color='orange', size= enemy_size, speed=enemy_speed, sprites=octopus_sprites)
           elif row == 2 or row == 3:
             enemies[col][row] = CrabEnemy(pygame.Vector2(x_pos, y_pos), color='yellow', size= enemy_size, speed=enemy_speed, sprites=crab_sprites)
           else:
             enemies[col][row] = SquidEnemy(pygame.Vector2(x_pos, y_pos), color='pink', size= enemy_size, speed=enemy_speed,sprites=squid_sprites)
 
-  def auto_shoot(self, delta_time: float, sprite: pygame.Surface):
+  def auto_shoot(self, delta_time: float, sprites: list[pygame.Surface]):
     for col in self.enemies:
         for i in range(0, len(col)):
             enemy = col[i]
@@ -99,7 +99,7 @@ class EnemyFormation:
                 can_shoot = bool(random.randint(0, 1))
                 if (can_shoot):
                     bullet_pos = pygame.Vector2(x=enemy.rect.x + enemy.size[0] / 2, y=enemy.rect.y)
-                    self.bullets.append(Bullet(position=bullet_pos, color="white", speed=100, sprite=sprite))
+                    self.bullets.append(Bullet(position=bullet_pos, speed=100, sprites=sprites))
                     self.enemy_firing_cooldown = random.randint(MIN_FIRING_COOLDOWN_TIME, MAX_FIRING_COOLDOWN_TIME)
 
     self.enemy_firing_cooldown -= delta_time
