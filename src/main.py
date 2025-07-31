@@ -12,6 +12,7 @@ running = True
 delta_time = 0
 is_game_over = False
 FPS = 60
+is_pause = False
 
 sprite_manager = SpriteManager('./assets/sprites/SpaceInvadersSpriteSheet.png')
 
@@ -20,6 +21,8 @@ playable_area_offset = 10
 player_sprites = sprite_manager.get_sprites("player")
 player = Player(position=player_start_pos
 , sprites=player_sprites)
+
+PLAYER_REVIVE_EVENT = pygame.event.custom_type()
 
 enemy_row = 5
 enemy_col = 5
@@ -54,8 +57,13 @@ while running:
             bullet_pos = pygame.Vector2(x=player.rect.x + player.size[0] / 2, y=player.rect.y)
             bullet = Bullet(position=bullet_pos, speed=500, sprites=player_bullet_sprites)
             player.shoot(bullet)
+        if (event.type == PLAYER_REVIVE_EVENT):
+            player.revive()
+            is_pause = False
 
     screen.fill("black")
+    if (is_pause):
+        continue
 
     # Bullet
     for bullet in player.bullets:
@@ -79,9 +87,14 @@ while running:
         bullet.move_vertically(delta_time * bullet.speed)
         if (bullet.rect.colliderect(player)):
             player.lose_life()
+            is_pause = True
+
             if (player.lives <= 0):
                 delta_time = 0
                 is_game_over = True
+            else:
+                pygame.time.set_timer(PLAYER_REVIVE_EVENT, player.death_timer_ms)
+
             enemy_formation.bullets.remove(bullet)
 
     # Player
@@ -100,6 +113,7 @@ while running:
         if (player.lives <= 0):
             delta_time = 0
             is_game_over = True
+
     # UI
     score_surface = base_pixel_font.render(f"SCORE {player.score}", (0, 0, 0, 0), "white")
     lives_surface = base_pixel_font.render(f"LIVES {player.lives}", (0, 0, 0, 0), "white")

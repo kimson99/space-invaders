@@ -6,7 +6,7 @@ class SpriteManager:
   def __init__(self, spritesheet_path) -> None:
     self.spritesheet = SpriteSheet(spritesheet_path)
     self.sprite_cords = {
-      'player': [(1, 49, 16, 8)],
+      'player': [(1, 49, 16, 8), (19, 49, 16, 8)],
       
       'octopus_enemy': [(1, 1, 16, 8), (1, 11, 16, 8)],
       'crab_enemy': [(19, 1, 16, 8), (19, 11, 16, 8)],

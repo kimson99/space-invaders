@@ -70,8 +70,10 @@ class EnemyFormation:
     self.enemies = enemies
     self.current_step = STEP_INTERVAL
     self.enemy_firing_cooldown: float = random.randint(MIN_FIRING_COOLDOWN_TIME, MAX_FIRING_COOLDOWN_TIME)
+    self.can_move = True
 
     self.bullets: list[Bullet] = []
+    
   
     
     octopus_sprites = sprite_manager.get_sprites('octopus_enemy')
@@ -129,6 +131,8 @@ class EnemyFormation:
       self.move_down()
        
   def auto_move(self, delta_time: float = 0, mode: Literal["step", "delta"] = "step"):
+    if (self.can_move == False):
+       return
     if (mode == "step"):
       self.move_by_step(delta_time=delta_time)
     else:
@@ -162,6 +166,12 @@ class EnemyFormation:
           if (enemy.rect.colliderect(player)):
             return True
     return False
+  
+  def stop_moving(self):
+     self.can_move = False
+
+  def resume_moving(self):
+     self.can_move = True
   
   def render(self, surface: pygame.Surface, delta_time: float):
     for col in self.enemies:
