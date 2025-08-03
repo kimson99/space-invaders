@@ -87,12 +87,6 @@ class SquidEnemy(Enemy):
         super().__init__(position, color, size, speed, point, sprites)
 
 
-STEP_INTERVAL = 0.5
-MIN_FIRING_COOLDOWN_TIME = 2
-MAX_FIRING_COOLDOWN_TIME = 5
-ENEMY_MAX_BULLET = 3
-
-
 class EnemyFormation:
     def __init__(
         self,
@@ -119,22 +113,22 @@ class EnemyFormation:
             if move_down_distance is not None
             else formation_config[ConfigKey.ENEMY_FORMATION_MOVE_DOWN_DISTANCE]
         )
-        enemy_col = (
+        self.enemy_col = (
             enemy_col
             if enemy_col is not None
             else formation_config[ConfigKey.ENEMY_COL]
         )
-        enemy_row = (
+        self.enemy_row = (
             enemy_row
             if enemy_row is not None
             else formation_config[ConfigKey.ENEMY_ROW]
         )
-        enemy_formation_gap = (
+        self.enemy_formation_gap = (
             enemy_formation_gap
             if enemy_formation_gap is not None
             else formation_config[ConfigKey.ENEMY_FORMATION_GAP]
         )
-        enemy_size = (
+        self.enemy_size = (
             enemy_size
             if enemy_size is not None
             else (
@@ -142,10 +136,10 @@ class EnemyFormation:
                 formation_config[ConfigKey.ENEMY_SIZE_HEIGHT],
             )
         )
-        enemy_start_pos = (
+        self.enemy_start_pos = (
             enemy_start_pos if enemy_start_pos is not None else pygame.Vector2(50, 50)
         )
-        enemy_speed = (
+        self.enemy_speed = (
             enemy_speed
             if enemy_speed is not None
             else formation_config[ConfigKey.ENEMY_SPEED]
@@ -155,49 +149,76 @@ class EnemyFormation:
         self.left_limit = left_limit
         self.right_limit = right_limit
         self.enemies: list[list[Enemy]] = [
-            [None] * enemy_row for _ in range(0, enemy_col)
+            [None] * self.enemy_row for _ in range(0, self.enemy_col)
         ]
-        self.current_step = STEP_INTERVAL
-        self.enemy_firing_cooldown: float = random.randint(
-            MIN_FIRING_COOLDOWN_TIME, MAX_FIRING_COOLDOWN_TIME
-        )
+        self.step_interval = formation_config[ConfigKey.ENEMY_STEP_INTERVAL]
+        self.current_step = formation_config[ConfigKey.ENEMY_STEP_INTERVAL]
+       
         self.can_move = True
+        self.enemy_count = self.enemy_col * self.enemy_row
+        self.respawn_timer = formation_config.get(ConfigKey.ENEMY_RESPAWN_TIMER_MS)
 
         self.bullets: list[Bullet] = []
+        self.max_bullets = formation_config[ConfigKey.ENEMY_MAX_BULLETS]
+        self.min_firing_cooldown: float = formation_config[ConfigKey.ENEMY_MIN_FIRING_COOLDOWN]
+        self.max_firing_cooldown: float = formation_config[ConfigKey.ENEMY_MAX_FIRING_COOLDOWN]
+        self.enemy_firing_cooldown = random.uniform(
+            self.min_firing_cooldown, self.max_firing_cooldown
+        )
 
         octopus_sprites = sprite_manager.get_sprites(SpriteKey.OCTOPUS_ENEMY)
         crab_sprites = sprite_manager.get_sprites(SpriteKey.CRAB_ENEMY)
         squid_sprites = sprite_manager.get_sprites(SpriteKey.SQUID_ENEMY)
+        self.sprites = {
+            SpriteKey.OCTOPUS_ENEMY: octopus_sprites,
+            SpriteKey.CRAB_ENEMY: crab_sprites,
+            SpriteKey.SQUID_ENEMY: squid_sprites
+        }
 
-        for col in range(0, enemy_col):
-            horizontal_offset = col * enemy_formation_gap + col * enemy_size[0]
-            for row in range(0, enemy_row):
-                vertical_offset = row * enemy_formation_gap + row * enemy_size[1]
-                x_pos = enemy_start_pos.x + horizontal_offset
-                y_pos = enemy_start_pos.y - vertical_offset
+        self.create_enemies_list()
+
+    def respawn_enemies_list(self):
+        self.horizontal_direction = 1
+        self.enemy_count = self.enemy_col * self.enemy_row
+        print(self.enemy_count)
+        self.enemies = [
+            [None] * self.enemy_row for _ in range(0, self.enemy_col)
+        ]
+        self.create_enemies_list()
+
+    def despawn_bullets(self):
+        self.bullets = []
+
+    def create_enemies_list(self):
+        for col in range(0, self.enemy_col):
+            horizontal_offset = col * self.enemy_formation_gap + col * self.enemy_size[0]
+            for row in range(0, self.enemy_row):
+                vertical_offset = row * self.enemy_formation_gap + row * self.enemy_size[1]
+                x_pos = self.enemy_start_pos.x + horizontal_offset
+                y_pos = self.enemy_start_pos.y - vertical_offset
                 if row == 0 or row == 1:
                     self.enemies[col][row] = OctupusEnemy(
                         pygame.Vector2(x_pos, y_pos),
                         color="orange",
-                        size=enemy_size,
-                        speed=enemy_speed,
-                        sprites=octopus_sprites,
+                        size=self.enemy_size,
+                        speed=self.enemy_speed,
+                        sprites=self.sprites[SpriteKey.OCTOPUS_ENEMY],
                     )
                 elif row == 2 or row == 3:
                     self.enemies[col][row] = CrabEnemy(
                         pygame.Vector2(x_pos, y_pos),
                         color="yellow",
-                        size=enemy_size,
-                        speed=enemy_speed,
-                        sprites=crab_sprites,
+                        size=self.enemy_size,
+                        speed=self.enemy_speed,
+                        sprites=self.sprites[SpriteKey.CRAB_ENEMY],
                     )
                 else:
                     self.enemies[col][row] = SquidEnemy(
                         pygame.Vector2(x_pos, y_pos),
                         color="pink",
-                        size=enemy_size,
-                        speed=enemy_speed,
-                        sprites=squid_sprites,
+                        size=self.enemy_size,
+                        speed=self.enemy_speed,
+                        sprites=self.sprites[SpriteKey.SQUID_ENEMY],
                     )
 
     def auto_shoot(self, delta_time: float, sprites: list[pygame.Surface]):
@@ -206,7 +227,7 @@ class EnemyFormation:
                 enemy = col[i]
                 if (
                     i == 0
-                    and (len(self.bullets) < ENEMY_MAX_BULLET or len(self.bullets) == 0)
+                    and (len(self.bullets) < self.max_bullets or len(self.bullets) == 0)
                     and self.enemy_firing_cooldown < 0
                 ):
                     can_shoot = bool(random.randint(0, 1))
@@ -218,7 +239,7 @@ class EnemyFormation:
                             Bullet(position=bullet_pos, speed=100, sprites=sprites)
                         )
                         self.enemy_firing_cooldown = random.randint(
-                            MIN_FIRING_COOLDOWN_TIME, MAX_FIRING_COOLDOWN_TIME
+                            self.min_firing_cooldown, self.max_firing_cooldown
                         )
 
         self.enemy_firing_cooldown -= delta_time
@@ -235,7 +256,7 @@ class EnemyFormation:
         if self.is_past_horizontal_bound():
             self.reverse_direction()
             self.move_down()
-        self.current_step = STEP_INTERVAL
+        self.current_step = self.step_interval
 
     def move_by_delta_time(self, delta_time: float):
         for row in self.enemies:

@@ -23,6 +23,11 @@ class ConfigKey(Enum):
     ENEMY_SPEED = "enemy-speed"
     ENEMY_FORMATION_GAP = "enemy-formation-gap"
     ENEMY_FORMATION_MOVE_DOWN_DISTANCE = "enemy-formation-move-down-distance"
+    ENEMY_RESPAWN_TIMER_MS = "enemy-respawn-timer-ms"
+    ENEMY_MAX_BULLETS = "enemy-max-bullet"
+    ENEMY_STEP_INTERVAL = "enemy-step-interval"
+    ENEMY_MIN_FIRING_COOLDOWN = "enemy-min-firing-cooldown"
+    ENEMY_MAX_FIRING_COOLDOWN = "enemy-max-firing-cooldown"
 
     # Player
     PLAYER_SIZE_WIDTH = "player-size-width"
@@ -88,5 +93,10 @@ class Config:
             ConfigKey.ENEMY_SIZE_HEIGHT: 20,
             ConfigKey.ENEMY_SPEED: 10,
             ConfigKey.ENEMY_FORMATION_GAP: 20,
-            ConfigKey.ENEMY_FORMATION_MOVE_DOWN_DISTANCE: 10,
+            ConfigKey.ENEMY_FORMATION_MOVE_DOWN_DISTANCE: 20,
+            ConfigKey.ENEMY_RESPAWN_TIMER_MS: 2000,
+            ConfigKey.ENEMY_MAX_BULLETS: 3,
+            ConfigKey.ENEMY_MIN_FIRING_COOLDOWN: 2,
+            ConfigKey.ENEMY_MAX_FIRING_COOLDOWN: 5,
+            ConfigKey.ENEMY_STEP_INTERVAL: 0.5
         }

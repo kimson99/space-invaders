@@ -16,6 +16,7 @@ class Game:
         font_config = config.font_config()
         asset_config = config.asset_config()
         gameplay_config = config.gameplay_config()
+        enemy_config = config.enemy_formation_config()
 
         self.screen = pygame.display.set_mode(
             (
@@ -47,8 +48,8 @@ class Game:
         self.player = Player(position=player_start_pos, sprites=player_sprites)
 
         self.enemy_formation = EnemyFormation(
-            left_limit=0,
-            right_limit=self.screen.get_width(),
+            left_limit=enemy_config[ConfigKey.ENEMY_SIZE_WIDTH],
+            right_limit=self.screen.get_width() - enemy_config[ConfigKey.ENEMY_SIZE_WIDTH],
             sprite_manager=sprite_manager,
             config=config,
             enemy_start_pos=pygame.Vector2(5, self.screen.get_height() / 3),
@@ -79,6 +80,9 @@ class Game:
                 self.player.revive()
                 self.is_pause = False
 
+            if event.type == RESPAWN_ENEMIES_LIST:
+                self.enemy_formation.respawn_enemies_list()
+
     def update(self):
         self.handle_event()
 
@@ -99,6 +103,13 @@ class Game:
                     self.player.score += hit_enemy.point
                     col.remove(hit_enemy)
                     self.player.bullets.remove(bullet)
+                    self.enemy_formation.enemy_count -= 1
+                    if (self.enemy_formation.enemy_count == 0):
+                        self.enemy_formation.despawn_bullets()
+                        pygame.time.set_timer(
+                            RESPAWN_ENEMIES_LIST, self.enemy_formation.respawn_timer,
+                            1
+                        )
                     break
 
         for bullet in self.enemy_formation.bullets:
@@ -115,7 +126,7 @@ class Game:
                     self.is_game_over = True
                 else:
                     pygame.time.set_timer(
-                        PLAYER_REVIVE_EVENT, self.player.death_timer_ms
+                        PLAYER_REVIVE_EVENT, self.player.death_timer_ms, 1
                     )
 
                 self.enemy_formation.bullets.remove(bullet)
