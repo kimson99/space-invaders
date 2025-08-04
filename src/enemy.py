@@ -153,15 +153,19 @@ class EnemyFormation:
         ]
         self.step_interval = formation_config[ConfigKey.ENEMY_STEP_INTERVAL]
         self.current_step = formation_config[ConfigKey.ENEMY_STEP_INTERVAL]
-       
+
         self.can_move = True
         self.enemy_count = self.enemy_col * self.enemy_row
         self.respawn_timer = formation_config.get(ConfigKey.ENEMY_RESPAWN_TIMER_MS)
 
         self.bullets: list[Bullet] = []
         self.max_bullets = formation_config[ConfigKey.ENEMY_MAX_BULLETS]
-        self.min_firing_cooldown: float = formation_config[ConfigKey.ENEMY_MIN_FIRING_COOLDOWN]
-        self.max_firing_cooldown: float = formation_config[ConfigKey.ENEMY_MAX_FIRING_COOLDOWN]
+        self.min_firing_cooldown: float = formation_config[
+            ConfigKey.ENEMY_MIN_FIRING_COOLDOWN
+        ]
+        self.max_firing_cooldown: float = formation_config[
+            ConfigKey.ENEMY_MAX_FIRING_COOLDOWN
+        ]
         self.enemy_firing_cooldown = random.uniform(
             self.min_firing_cooldown, self.max_firing_cooldown
         )
@@ -172,7 +176,7 @@ class EnemyFormation:
         self.sprites = {
             SpriteKey.OCTOPUS_ENEMY: octopus_sprites,
             SpriteKey.CRAB_ENEMY: crab_sprites,
-            SpriteKey.SQUID_ENEMY: squid_sprites
+            SpriteKey.SQUID_ENEMY: squid_sprites,
         }
 
         self.create_enemies_list()
@@ -180,10 +184,7 @@ class EnemyFormation:
     def respawn_enemies_list(self):
         self.horizontal_direction = 1
         self.enemy_count = self.enemy_col * self.enemy_row
-        print(self.enemy_count)
-        self.enemies = [
-            [None] * self.enemy_row for _ in range(0, self.enemy_col)
-        ]
+        self.enemies = [[None] * self.enemy_row for _ in range(0, self.enemy_col)]
         self.create_enemies_list()
 
     def despawn_bullets(self):
@@ -191,9 +192,13 @@ class EnemyFormation:
 
     def create_enemies_list(self):
         for col in range(0, self.enemy_col):
-            horizontal_offset = col * self.enemy_formation_gap + col * self.enemy_size[0]
+            horizontal_offset = (
+                col * self.enemy_formation_gap + col * self.enemy_size[0]
+            )
             for row in range(0, self.enemy_row):
-                vertical_offset = row * self.enemy_formation_gap + row * self.enemy_size[1]
+                vertical_offset = (
+                    row * self.enemy_formation_gap + row * self.enemy_size[1]
+                )
                 x_pos = self.enemy_start_pos.x + horizontal_offset
                 y_pos = self.enemy_start_pos.y - vertical_offset
                 if row == 0 or row == 1:

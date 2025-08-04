@@ -4,6 +4,12 @@ from enemy import *
 from sprite_manager import SpriteManager, SpriteKey
 from config import Config, ConfigKey
 from event import *
+from enum import Enum
+
+
+class GameScene(Enum):
+    MAIN_MENU = "main-menu"
+    PLAYING = "playing"
 
 
 class Game:
@@ -17,6 +23,8 @@ class Game:
         asset_config = config.asset_config()
         gameplay_config = config.gameplay_config()
         enemy_config = config.enemy_formation_config()
+
+        self.current_scene = GameScene.MAIN_MENU
 
         self.screen = pygame.display.set_mode(
             (
@@ -49,7 +57,8 @@ class Game:
 
         self.enemy_formation = EnemyFormation(
             left_limit=enemy_config[ConfigKey.ENEMY_SIZE_WIDTH],
-            right_limit=self.screen.get_width() - enemy_config[ConfigKey.ENEMY_SIZE_WIDTH],
+            right_limit=self.screen.get_width()
+            - enemy_config[ConfigKey.ENEMY_SIZE_WIDTH],
             sprite_manager=sprite_manager,
             config=config,
             enemy_start_pos=pygame.Vector2(5, self.screen.get_height() / 3),
@@ -60,138 +69,167 @@ class Game:
 
     def start(self):
         while self.is_running:
+            self.handle_events()
             self.update()
             self.render()
         pygame.quit()
 
-    def handle_event(self):
+    def handle_events(self):
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 self.is_running = False
-            if event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE:
-                bullet_pos = pygame.Vector2(
-                    x=self.player.rect.x + self.player.size[0] / 2, y=self.player.rect.y
-                )
-                bullet = Bullet(
-                    position=bullet_pos, speed=500, sprites=self.player_bullet_sprites
-                )
-                self.player.shoot(bullet)
-            if event.type == PLAYER_REVIVE_EVENT:
-                self.player.revive()
-                self.is_pause = False
 
-            if event.type == RESPAWN_ENEMIES_LIST:
-                self.enemy_formation.respawn_enemies_list()
+            match self.current_scene:
+                case GameScene.MAIN_MENU:
+                    if event.type == pygame.KEYDOWN and event.key == pygame.K_RETURN:
+                        self.current_scene = GameScene.PLAYING
+                case GameScene.PLAYING:
+                    if event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE:
+                        bullet_pos = pygame.Vector2(
+                            x=self.player.rect.x + self.player.size[0] / 2,
+                            y=self.player.rect.y,
+                        )
+                        bullet = Bullet(
+                            position=bullet_pos,
+                            speed=500,
+                            sprites=self.player_bullet_sprites,
+                        )
+                        self.player.shoot(bullet)
+                    if event.type == PLAYER_REVIVE_EVENT:
+                        self.player.revive()
+                        self.is_pause = False
+
+                    if event.type == RESPAWN_ENEMIES_LIST:
+                        self.enemy_formation.respawn_enemies_list()
 
     def update(self):
-        self.handle_event()
-
-        self.screen.fill("black")
         if self.is_pause:
             return
 
-        # Bullet
-        for bullet in self.player.bullets:
-            if bullet.is_out_of_bound(0, self.screen.get_height()):
-                self.player.bullets.remove(bullet)
-                continue
-            bullet.move_vertically(self.delta_time * bullet.speed * -1)
-            for col in self.enemy_formation.enemies:
-                collide_list = bullet.rect.collidelistall(col)
-                if len(collide_list) > 0:
-                    hit_enemy = col[collide_list[0]]
-                    self.player.score += hit_enemy.point
-                    col.remove(hit_enemy)
-                    self.player.bullets.remove(bullet)
-                    self.enemy_formation.enemy_count -= 1
-                    if (self.enemy_formation.enemy_count == 0):
-                        self.enemy_formation.despawn_bullets()
-                        pygame.time.set_timer(
-                            RESPAWN_ENEMIES_LIST, self.enemy_formation.respawn_timer,
-                            1
-                        )
-                    break
 
-        for bullet in self.enemy_formation.bullets:
-            if bullet.is_out_of_bound(0, self.screen.get_height()):
-                self.enemy_formation.bullets.remove(bullet)
-                continue
-            bullet.move_vertically(self.delta_time * bullet.speed)
-            if bullet.rect.colliderect(self.player):
-                self.player.lose_life()
-                self.is_pause = True
+        match self.current_scene:
+            case GameScene.MAIN_MENU:
+               pass
+            case GameScene.PLAYING:
+                # Bullet
+                for bullet in self.player.bullets:
+                    if bullet.is_out_of_bound(0, self.screen.get_height()):
+                        self.player.bullets.remove(bullet)
+                        continue
+                    bullet.move_vertically(self.delta_time * bullet.speed * -1)
+                    for col in self.enemy_formation.enemies:
+                        collide_list = bullet.rect.collidelistall(col)
+                        if len(collide_list) > 0:
+                            hit_enemy = col[collide_list[0]]
+                            self.player.score += hit_enemy.point
+                            col.remove(hit_enemy)
+                            self.player.bullets.remove(bullet)
+                            self.enemy_formation.enemy_count -= 1
+                            if self.enemy_formation.enemy_count == 0:
+                                self.enemy_formation.despawn_bullets()
+                                pygame.time.set_timer(
+                                    RESPAWN_ENEMIES_LIST, self.enemy_formation.respawn_timer, 1
+                                )
+                            break
 
-                if self.player.lives <= 0:
-                    self.delta_time = 0
-                    self.is_game_over = True
-                else:
-                    pygame.time.set_timer(
-                        PLAYER_REVIVE_EVENT, self.player.death_timer_ms, 1
+                for bullet in self.enemy_formation.bullets:
+                    if bullet.is_out_of_bound(0, self.screen.get_height()):
+                        self.enemy_formation.bullets.remove(bullet)
+                        continue
+                    bullet.move_vertically(self.delta_time * bullet.speed)
+                    if bullet.rect.colliderect(self.player):
+                        self.player.lose_life()
+                        self.is_pause = True
+
+                        if self.player.lives <= 0:
+                            self.delta_time = 0
+                            self.is_game_over = True
+                        else:
+                            pygame.time.set_timer(
+                                PLAYER_REVIVE_EVENT, self.player.death_timer_ms, 1
+                            )
+
+                        self.enemy_formation.bullets.remove(bullet)
+
+                # Player
+                keys_pressed = pygame.key.get_pressed()
+                if keys_pressed[pygame.K_a] or keys_pressed[pygame.K_LEFT]:
+                    self.player.move_left(
+                        delta_time=self.delta_time, left_limit=self.playable_area_offset
+                    )
+                if keys_pressed[pygame.K_d] or keys_pressed[pygame.K_RIGHT]:
+                    self.player.move_right(
+                        self.delta_time,
+                        right_limit=self.screen.get_width()
+                        - self.playable_area_offset
+                        - self.player.size[0],
                     )
 
-                self.enemy_formation.bullets.remove(bullet)
+                # Enemy
+                self.enemy_formation.auto_move(delta_time=self.delta_time, mode="step")
+                self.enemy_formation.auto_shoot(
+                    delta_time=self.delta_time, sprites=self.enemy_bullet_sprites
+                )
 
-        # Player
-        keys_pressed = pygame.key.get_pressed()
-        if keys_pressed[pygame.K_a] or keys_pressed[pygame.K_LEFT]:
-            self.player.move_left(
-                delta_time=self.delta_time, left_limit=self.playable_area_offset
-            )
-        if keys_pressed[pygame.K_d] or keys_pressed[pygame.K_RIGHT]:
-            self.player.move_right(
-                self.delta_time,
-                right_limit=self.screen.get_width()
-                - self.playable_area_offset
-                - self.player.size[0],
-            )
-
-        # Enemy
-        self.enemy_formation.auto_move(delta_time=self.delta_time, mode="step")
-        self.enemy_formation.auto_shoot(
-            delta_time=self.delta_time, sprites=self.enemy_bullet_sprites
-        )
-
-        if self.enemy_formation.collide_player(self.player):
-            self.player.lose_life()
-            if self.player.lives <= 0:
-                delta_time = 0
-                self.is_game_over = True
-
-        # UI
-        self.score_surface = self.base_pixel_font.render(
-            f"SCORE {self.player.score}", (0, 0, 0, 0), "white"
-        )
-        self.lives_surface = self.base_pixel_font.render(
-            f"LIVES {self.player.lives}", (0, 0, 0, 0), "white"
-        )
-        self.game_over_surface = self.large_pixel_font.render(
-            f"GAME OVER!", (0, 0, 0, 0), "white"
-        )
+                if self.enemy_formation.collide_player(self.player):
+                    self.player.lose_life()
+                    if self.player.lives <= 0:
+                        self.delta_time = 0
+                        self.is_game_over = True
 
     def render(self):
-        for bullet in self.player.bullets:
-            bullet.render(self.screen)
+        self.screen.fill("black")
+        match self.current_scene:
+            case GameScene.MAIN_MENU:
+                play_surface = self.large_pixel_font.render(
+                    f"PRESS  ENTER  TO  PLAY", (0, 0, 0, 0), "white"
+                )
+                self.screen.blit(
+                    play_surface,
+                    (
+                        (self.screen.get_width() - play_surface.get_width())
+                        / 2,
+                        self.screen.get_height() / 2
+                        - play_surface.get_height(),
+                    ),
+                )
+            case GameScene.PLAYING:
+                for bullet in self.player.bullets:
+                    bullet.render(self.screen)
 
-        for bullet in self.enemy_formation.bullets:
-            bullet.render(self.screen)
+                for bullet in self.enemy_formation.bullets:
+                    bullet.render(self.screen)
 
-        self.player.render(self.screen)
+                self.player.render(self.screen)
 
-        self.enemy_formation.render(self.screen, delta_time=self.delta_time)
+                self.enemy_formation.render(self.screen, delta_time=self.delta_time)
 
-        self.screen.blit(self.score_surface, (0, 0))
-        self.screen.blit(
-            self.lives_surface,
-            (self.screen.get_width() - self.lives_surface.get_width(), 0),
-        )
-        if self.is_game_over:
-            self.screen.blit(
-                self.game_over_surface,
-                (
-                    (self.screen.get_width() - self.game_over_surface.get_width()) / 2,
-                    self.screen.get_height() / 2 - self.game_over_surface.get_height(),
-                ),
-            )
+                # UI
+                score_surface = self.base_pixel_font.render(
+                    f"SCORE {self.player.score}", (0, 0, 0, 0), "white"
+                )
+                lives_surface = self.base_pixel_font.render(
+                    f"LIVES {self.player.lives}", (0, 0, 0, 0), "white"
+                )
+                game_over_surface = self.large_pixel_font.render(
+                    f"GAME OVER!", (0, 0, 0, 0), "white"
+                )
+                self.screen.blit(score_surface, (0, 0))
+                self.screen.blit(
+                    lives_surface,
+                    (self.screen.get_width() - lives_surface.get_width(), 0),
+                )
+                if self.is_game_over:
+                    self.screen.blit(
+                        game_over_surface,
+                        (
+                            (self.screen.get_width() - game_over_surface.get_width())
+                            / 2,
+                            self.screen.get_height() / 2
+                            - game_over_surface.get_height(),
+                        ),
+                    )
+
 
         pygame.display.flip()
 

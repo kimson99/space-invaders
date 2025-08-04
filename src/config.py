@@ -98,5 +98,5 @@ class Config:
             ConfigKey.ENEMY_MAX_BULLETS: 3,
             ConfigKey.ENEMY_MIN_FIRING_COOLDOWN: 2,
             ConfigKey.ENEMY_MAX_FIRING_COOLDOWN: 5,
-            ConfigKey.ENEMY_STEP_INTERVAL: 0.5
+            ConfigKey.ENEMY_STEP_INTERVAL: 0.5,
         }
