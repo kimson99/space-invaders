@@ -226,7 +226,7 @@ class EnemyFormation:
                         sprites=self.sprites[SpriteKey.SQUID_ENEMY],
                     )
 
-    def auto_shoot(self, delta_time: float, sprites: list[pygame.Surface]):
+    def auto_shoot(self, delta_time: float, sprites: list[pygame.Surface], speed = 100):
         for col in self.enemies:
             for i in range(0, len(col)):
                 enemy = col[i]
@@ -241,7 +241,7 @@ class EnemyFormation:
                             x=enemy.rect.x + enemy.size[0] / 2, y=enemy.rect.y
                         )
                         self.bullets.append(
-                            Bullet(position=bullet_pos, speed=100, sprites=sprites)
+                            Bullet(position=bullet_pos, speed=speed, sprites=sprites)
                         )
                         self.enemy_firing_cooldown = random.randint(
                             self.min_firing_cooldown, self.max_firing_cooldown

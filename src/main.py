@@ -24,6 +24,7 @@ class Game:
         gameplay_config = config.gameplay_config()
         enemy_config = config.enemy_formation_config()
 
+        self.gameplay_config = gameplay_config
         self.current_scene = GameScene.MAIN_MENU
 
         self.screen = pygame.display.set_mode(
@@ -91,7 +92,7 @@ class Game:
                         )
                         bullet = Bullet(
                             position=bullet_pos,
-                            speed=500,
+                            speed=self.gameplay_config[ConfigKey.PLAYER_BULLET_SPEED],
                             sprites=self.player_bullet_sprites,
                         )
                         self.player.shoot(bullet)
@@ -112,9 +113,10 @@ class Game:
                pass
             case GameScene.PLAYING:
                 # Bullet
+                player_bullets_to_remove = []
                 for bullet in self.player.bullets:
                     if bullet.is_out_of_bound(0, self.screen.get_height()):
-                        self.player.bullets.remove(bullet)
+                        player_bullets_to_remove.append(bullet)
                         continue
                     bullet.move_vertically(self.delta_time * bullet.speed * -1)
                     for col in self.enemy_formation.enemies:
@@ -123,7 +125,7 @@ class Game:
                             hit_enemy = col[collide_list[0]]
                             self.player.score += hit_enemy.point
                             col.remove(hit_enemy)
-                            self.player.bullets.remove(bullet)
+                            player_bullets_to_remove.append(bullet)
                             self.enemy_formation.enemy_count -= 1
                             if self.enemy_formation.enemy_count == 0:
                                 self.enemy_formation.despawn_bullets()
@@ -131,10 +133,13 @@ class Game:
                                     RESPAWN_ENEMIES_LIST, self.enemy_formation.respawn_timer, 1
                                 )
                             break
+                for bullet in player_bullets_to_remove:
+                    self.player.bullets.remove(bullet)
 
+                enemy_bullets_to_remove = []
                 for bullet in self.enemy_formation.bullets:
                     if bullet.is_out_of_bound(0, self.screen.get_height()):
-                        self.enemy_formation.bullets.remove(bullet)
+                        enemy_bullets_to_remove.append(bullet)
                         continue
                     bullet.move_vertically(self.delta_time * bullet.speed)
                     if bullet.rect.colliderect(self.player):
@@ -149,7 +154,10 @@ class Game:
                                 PLAYER_REVIVE_EVENT, self.player.death_timer_ms, 1
                             )
 
-                        self.enemy_formation.bullets.remove(bullet)
+                        enemy_bullets_to_remove.append(bullet)
+                
+                for bullet in enemy_bullets_to_remove:
+                    self.enemy_formation.bullets.remove(bullet)
 
                 # Player
                 keys_pressed = pygame.key.get_pressed()
@@ -168,7 +176,7 @@ class Game:
                 # Enemy
                 self.enemy_formation.auto_move(delta_time=self.delta_time, mode="step")
                 self.enemy_formation.auto_shoot(
-                    delta_time=self.delta_time, sprites=self.enemy_bullet_sprites
+                    delta_time=self.delta_time, sprites=self.enemy_bullet_sprites, speed=self.gameplay_config[ConfigKey.ENEMY_BULLET_SPEED],
                 )
 
                 if self.enemy_formation.collide_player(self.player):
