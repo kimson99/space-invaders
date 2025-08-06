@@ -15,6 +15,7 @@ class Enemy(pygame.sprite.Sprite):
         speed: float,
         point: float,
         sprites: list[pygame.Surface],
+        config: Config | None = None,
     ) -> None:
         pygame.sprite.Sprite.__init__(self)
         self.position = position
@@ -30,7 +31,12 @@ class Enemy(pygame.sprite.Sprite):
         self.rect.x = position.x
         self.rect.y = position.y
 
-        self.animation_interval = 0.5
+        # Use config for animation interval
+        if config is None:
+            config = Config()
+        formation_config = config.enemy_formation_config()
+        self.animation_interval = formation_config[ConfigKey.ENEMY_ANIMATION_INTERVAL]
+        self.animation_interval_reset = formation_config[ConfigKey.ENEMY_ANIMATION_INTERVAL]
 
     def move_horizontally(self, distance: float):
         self.rect.x += distance
@@ -42,7 +48,7 @@ class Enemy(pygame.sprite.Sprite):
         surface.blit(self.sprites[self.curr_sprite_index], self.rect)
         if self.animation_interval < 0:
             self.curr_sprite_index += 1
-            self.animation_interval = 0.5
+            self.animation_interval = self.animation_interval_reset
         if self.curr_sprite_index > self.max_sprites_index:
             self.curr_sprite_index = 0
         self.animation_interval -= delta_time
@@ -57,8 +63,9 @@ class OctupusEnemy(Enemy):
         speed: float,
         sprites: list[pygame.Surface],
         point=10,
+        config: Config | None = None,
     ) -> None:
-        super().__init__(position, color, size, speed, point, sprites)
+        super().__init__(position, color, size, speed, point, sprites, config)
 
 
 class CrabEnemy(Enemy):
@@ -70,8 +77,9 @@ class CrabEnemy(Enemy):
         speed: float,
         sprites: list[pygame.Surface],
         point=20,
+        config: Config | None = None,
     ) -> None:
-        super().__init__(position, color, size, speed, point, sprites)
+        super().__init__(position, color, size, speed, point, sprites, config)
 
 
 class SquidEnemy(Enemy):
@@ -83,8 +91,9 @@ class SquidEnemy(Enemy):
         speed: float,
         sprites: list[pygame.Surface],
         point=30,
+        config: Config | None = None,
     ) -> None:
-        super().__init__(position, color, size, speed, point, sprites)
+        super().__init__(position, color, size, speed, point, sprites, config)
 
 
 class EnemyFormation:
@@ -107,6 +116,7 @@ class EnemyFormation:
             config = Config()
 
         formation_config = config.enemy_formation_config()
+        self.config = config  # Store config for passing to enemies
 
         self.move_down_distance = (
             move_down_distance
@@ -208,6 +218,7 @@ class EnemyFormation:
                         size=self.enemy_size,
                         speed=self.enemy_speed,
                         sprites=self.sprites[SpriteKey.OCTOPUS_ENEMY],
+                        config=self.config,
                     )
                 elif row == 2 or row == 3:
                     self.enemies[col][row] = CrabEnemy(
@@ -216,6 +227,7 @@ class EnemyFormation:
                         size=self.enemy_size,
                         speed=self.enemy_speed,
                         sprites=self.sprites[SpriteKey.CRAB_ENEMY],
+                        config=self.config,
                     )
                 else:
                     self.enemies[col][row] = SquidEnemy(
@@ -224,6 +236,7 @@ class EnemyFormation:
                         size=self.enemy_size,
                         speed=self.enemy_speed,
                         sprites=self.sprites[SpriteKey.SQUID_ENEMY],
+                        config=self.config,
                     )
 
     def auto_shoot(self, delta_time: float, sprites: list[pygame.Surface], speed = 100):

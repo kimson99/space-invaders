@@ -28,6 +28,7 @@ class ConfigKey(Enum):
     ENEMY_STEP_INTERVAL = "enemy-step-interval"
     ENEMY_MIN_FIRING_COOLDOWN = "enemy-min-firing-cooldown"
     ENEMY_MAX_FIRING_COOLDOWN = "enemy-max-firing-cooldown"
+    ENEMY_ANIMATION_INTERVAL = "enemy-animation-interval"
 
     # Player
     PLAYER_SIZE_WIDTH = "player-size-width"
@@ -99,4 +100,5 @@ class Config:
             ConfigKey.ENEMY_MIN_FIRING_COOLDOWN: 2,
             ConfigKey.ENEMY_MAX_FIRING_COOLDOWN: 5,
             ConfigKey.ENEMY_STEP_INTERVAL: 0.5,
+            ConfigKey.ENEMY_ANIMATION_INTERVAL: 0.5,
         }

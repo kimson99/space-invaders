@@ -82,20 +82,23 @@ class Game:
 
             match self.current_scene:
                 case GameScene.MAIN_MENU:
-                    if event.type == pygame.KEYDOWN and event.key == pygame.K_RETURN:
+                    if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
                         self.current_scene = GameScene.PLAYING
                 case GameScene.PLAYING:
-                    if event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE:
-                        bullet_pos = pygame.Vector2(
-                            x=self.player.rect.x + self.player.size[0] / 2,
-                            y=self.player.rect.y,
-                        )
-                        bullet = Bullet(
-                            position=bullet_pos,
-                            speed=self.gameplay_config[ConfigKey.PLAYER_BULLET_SPEED],
-                            sprites=self.player_bullet_sprites,
-                        )
-                        self.player.shoot(bullet)
+                    if event.type == pygame.KEYDOWN:
+                        if event.key == pygame.K_RETURN:
+                            self.is_pause = not self.is_pause
+                        if event.key == pygame.K_SPACE:
+                            bullet_pos = pygame.Vector2(
+                                x=self.player.rect.x + self.player.size[0] / 2,
+                                y=self.player.rect.y,
+                            )
+                            bullet = Bullet(
+                                position=bullet_pos,
+                                speed=self.gameplay_config[ConfigKey.PLAYER_BULLET_SPEED],
+                                sprites=self.player_bullet_sprites,
+                            )
+                            self.player.shoot(bullet)
                     if event.type == PLAYER_REVIVE_EVENT:
                         self.player.revive()
                         self.is_pause = False
