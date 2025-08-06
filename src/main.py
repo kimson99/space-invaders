@@ -82,11 +82,11 @@ class Game:
 
             match self.current_scene:
                 case GameScene.MAIN_MENU:
-                    if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
+                    if event.type == pygame.KEYDOWN and event.key == pygame.K_RETURN:
                         self.current_scene = GameScene.PLAYING
                 case GameScene.PLAYING:
                     if event.type == pygame.KEYDOWN:
-                        if event.key == pygame.K_RETURN:
+                        if event.key == pygame.K_ESCAPE:
                             self.is_pause = not self.is_pause
                         if event.key == pygame.K_SPACE:
                             bullet_pos = pygame.Vector2(
@@ -95,7 +95,9 @@ class Game:
                             )
                             bullet = Bullet(
                                 position=bullet_pos,
-                                speed=self.gameplay_config[ConfigKey.PLAYER_BULLET_SPEED],
+                                speed=self.gameplay_config[
+                                    ConfigKey.PLAYER_BULLET_SPEED
+                                ],
                                 sprites=self.player_bullet_sprites,
                             )
                             self.player.shoot(bullet)
@@ -110,10 +112,9 @@ class Game:
         if self.is_pause:
             return
 
-
         match self.current_scene:
             case GameScene.MAIN_MENU:
-               pass
+                pass
             case GameScene.PLAYING:
                 # Bullet
                 player_bullets_to_remove = []
@@ -133,7 +134,9 @@ class Game:
                             if self.enemy_formation.enemy_count == 0:
                                 self.enemy_formation.despawn_bullets()
                                 pygame.time.set_timer(
-                                    RESPAWN_ENEMIES_LIST, self.enemy_formation.respawn_timer, 1
+                                    RESPAWN_ENEMIES_LIST,
+                                    self.enemy_formation.respawn_timer,
+                                    1,
                                 )
                             break
                 for bullet in player_bullets_to_remove:
@@ -158,7 +161,7 @@ class Game:
                             )
 
                         enemy_bullets_to_remove.append(bullet)
-                
+
                 for bullet in enemy_bullets_to_remove:
                     self.enemy_formation.bullets.remove(bullet)
 
@@ -179,7 +182,9 @@ class Game:
                 # Enemy
                 self.enemy_formation.auto_move(delta_time=self.delta_time, mode="step")
                 self.enemy_formation.auto_shoot(
-                    delta_time=self.delta_time, sprites=self.enemy_bullet_sprites, speed=self.gameplay_config[ConfigKey.ENEMY_BULLET_SPEED],
+                    delta_time=self.delta_time,
+                    sprites=self.enemy_bullet_sprites,
+                    speed=self.gameplay_config[ConfigKey.ENEMY_BULLET_SPEED],
                 )
 
                 if self.enemy_formation.collide_player(self.player):
@@ -198,10 +203,8 @@ class Game:
                 self.screen.blit(
                     play_surface,
                     (
-                        (self.screen.get_width() - play_surface.get_width())
-                        / 2,
-                        self.screen.get_height() / 2
-                        - play_surface.get_height(),
+                        (self.screen.get_width() - play_surface.get_width()) / 2,
+                        self.screen.get_height() / 2 - play_surface.get_height(),
                     ),
                 )
             case GameScene.PLAYING:
@@ -230,6 +233,17 @@ class Game:
                     lives_surface,
                     (self.screen.get_width() - lives_surface.get_width(), 0),
                 )
+                if self.is_pause:
+                    pause_surface = self.base_pixel_font.render(
+                        f"PAUSED", (0, 0, 0, 0), "white"
+                    )
+                    self.screen.blit(
+                        pause_surface,
+                        (
+                            (self.screen.get_width() - pause_surface.get_width()) / 2,
+                            self.screen.get_height() / 2 - pause_surface.get_height(),
+                        ),
+                    )
                 if self.is_game_over:
                     self.screen.blit(
                         game_over_surface,
@@ -240,7 +254,6 @@ class Game:
                             - game_over_surface.get_height(),
                         ),
                     )
-
 
         pygame.display.flip()
 

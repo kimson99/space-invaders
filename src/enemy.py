@@ -36,7 +36,9 @@ class Enemy(pygame.sprite.Sprite):
             config = Config()
         formation_config = config.enemy_formation_config()
         self.animation_interval = formation_config[ConfigKey.ENEMY_ANIMATION_INTERVAL]
-        self.animation_interval_reset = formation_config[ConfigKey.ENEMY_ANIMATION_INTERVAL]
+        self.animation_interval_reset = formation_config[
+            ConfigKey.ENEMY_ANIMATION_INTERVAL
+        ]
 
     def move_horizontally(self, distance: float):
         self.rect.x += distance
@@ -239,7 +241,7 @@ class EnemyFormation:
                         config=self.config,
                     )
 
-    def auto_shoot(self, delta_time: float, sprites: list[pygame.Surface], speed = 100):
+    def auto_shoot(self, delta_time: float, sprites: list[pygame.Surface], speed=100):
         for col in self.enemies:
             for i in range(0, len(col)):
                 enemy = col[i]
