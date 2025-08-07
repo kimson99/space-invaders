@@ -97,8 +97,8 @@ class Config:
             ConfigKey.ENEMY_FORMATION_MOVE_DOWN_DISTANCE: 20,
             ConfigKey.ENEMY_RESPAWN_TIMER_MS: 2000,
             ConfigKey.ENEMY_MAX_BULLETS: 3,
-            ConfigKey.ENEMY_MIN_FIRING_COOLDOWN: 2,
-            ConfigKey.ENEMY_MAX_FIRING_COOLDOWN: 5,
+            ConfigKey.ENEMY_MIN_FIRING_COOLDOWN: 1,
+            ConfigKey.ENEMY_MAX_FIRING_COOLDOWN: 2,
             ConfigKey.ENEMY_STEP_INTERVAL: 0.5,
             ConfigKey.ENEMY_ANIMATION_INTERVAL: 0.5,
         }

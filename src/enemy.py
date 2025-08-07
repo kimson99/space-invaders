@@ -256,7 +256,7 @@ class EnemyFormation:
                 enemy = col[i]
                 if (
                     i == 0
-                    and (len(self.bullets) < self.max_bullets or len(self.bullets) == 0)
+                    and len(self.bullets) < self.max_bullets
                     and self.enemy_firing_cooldown < 0
                 ):
                     can_shoot = bool(random.randint(0, 1))
@@ -267,7 +267,7 @@ class EnemyFormation:
                         self.bullets.append(
                             Bullet(position=bullet_pos, speed=speed, sprites=sprites)
                         )
-                        self.enemy_firing_cooldown = random.randint(
+                        self.enemy_firing_cooldown = random.uniform(
                             self.min_firing_cooldown, self.max_firing_cooldown
                         )
 
