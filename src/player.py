@@ -46,6 +46,9 @@ class Player(pygame.sprite.Sprite):
         self.rect.x = position.x
         self.rect.y = position.y
 
+        self.shoot_sound = pygame.mixer.Sound("./assets/audios/shoot.wav")
+        self.death_sound = pygame.mixer.Sound("./assets/audios/explosion.wav")
+
     def move_left(self, delta_time: float, left_limit: float):
         self.rect.x = max(self.rect.x - self.speed * delta_time, left_limit)
 
@@ -56,12 +59,13 @@ class Player(pygame.sprite.Sprite):
         # One bullet at a time
         if len(self.bullets) > 0:
             return
-
+        pygame.mixer.Sound.play(self.shoot_sound)
         self.bullets.append(bullet)
 
     def lose_life(self):
         self.lives -= 1
         self.is_dead = True
+        pygame.mixer.Sound.play(self.death_sound)
 
     def revive(self):
         self.is_dead = False

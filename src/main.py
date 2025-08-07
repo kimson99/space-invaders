@@ -103,13 +103,14 @@ class Game:
                             self.player.shoot(bullet)
                     if event.type == PLAYER_REVIVE_EVENT:
                         self.player.revive()
-                        self.is_pause = False
+                        
 
                     if event.type == RESPAWN_ENEMIES_LIST:
                         self.enemy_formation.respawn_enemies_list()
+                        self.enemy_formation.resume_moving()
 
     def update(self):
-        if self.is_pause:
+        if self.is_pause or self.player.is_dead:
             return
 
         match self.current_scene:
@@ -133,11 +134,13 @@ class Game:
                             self.enemy_formation.enemy_count -= 1
                             if self.enemy_formation.enemy_count == 0:
                                 self.enemy_formation.despawn_bullets()
+                                self.enemy_formation.stop_moving()
                                 pygame.time.set_timer(
                                     RESPAWN_ENEMIES_LIST,
                                     self.enemy_formation.respawn_timer,
                                     1,
                                 )
+                            
                             break
                 for bullet in player_bullets_to_remove:
                     self.player.bullets.remove(bullet)
@@ -150,7 +153,6 @@ class Game:
                     bullet.move_vertically(self.delta_time * bullet.speed)
                     if bullet.rect.colliderect(self.player):
                         self.player.lose_life()
-                        self.is_pause = True
 
                         if self.player.lives <= 0:
                             self.delta_time = 0
