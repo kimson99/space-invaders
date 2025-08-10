@@ -195,11 +195,11 @@ class EnemyFormation:
             pygame.mixer.Sound("./assets/audios/fastinvader1.wav"),
             pygame.mixer.Sound("./assets/audios/fastinvader2.wav"),
             pygame.mixer.Sound("./assets/audios/fastinvader3.wav"),
-            pygame.mixer.Sound("./assets/audios/fastinvader4.wav")
+            pygame.mixer.Sound("./assets/audios/fastinvader4.wav"),
         ]
         self.move_sound_index = 0
         self.move_sound_max_index = len(self.move_sounds) - 1
-    
+
         self.create_enemies_list()
 
     def respawn_enemies_list(self):
@@ -281,7 +281,7 @@ class EnemyFormation:
         for row in self.enemies:
             for enemy in row:
                 enemy.move_horizontally(enemy.size[0] * self.horizontal_direction)
-    
+
         pygame.mixer.Sound.play(self.move_sounds[self.move_sound_index])
         self.move_sound_index += 1
         if self.move_sound_index > self.move_sound_max_index:

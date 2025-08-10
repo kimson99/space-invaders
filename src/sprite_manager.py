@@ -10,6 +10,7 @@ class SpriteKey(Enum):
     SQUID_ENEMY = "squid_enemy"
     PLAYER_BULLET = "player_bullet"
     ENEMY_BULLET = "enemy_bullet"
+    BARRIER = "barrier"
 
 
 class SpriteManager:
@@ -22,6 +23,7 @@ class SpriteManager:
             SpriteKey.SQUID_ENEMY: [(37, 1, 16, 8), (37, 11, 16, 8)],
             SpriteKey.PLAYER_BULLET: [(20, 20, 5, 10)],
             SpriteKey.ENEMY_BULLET: [(1, 20, 5, 10)],
+            SpriteKey.BARRIER: [(44, 30, 30, 18)],
         }
 
     def get_sprites(self, key: SpriteKey) -> list[pygame.Surface]:

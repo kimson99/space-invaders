@@ -43,6 +43,11 @@ class ConfigKey(Enum):
     PLAYER_BULLET_SPEED = "player-bullet-speed"
     ENEMY_BULLET_SPEED = "enemy-bullet-speed"
 
+    # Barrier
+    BARRIER_COUNT = "barrier-count"
+    BARRIER_WIDTH = "barrier-width"
+    BARRIER_HEIGHT = "barrier-height"
+
 
 class Config:
     def __init__(self) -> None:
@@ -101,4 +106,11 @@ class Config:
             ConfigKey.ENEMY_MAX_FIRING_COOLDOWN: 2,
             ConfigKey.ENEMY_STEP_INTERVAL: 0.5,
             ConfigKey.ENEMY_ANIMATION_INTERVAL: 0.5,
+        }
+
+    def barrier_config(self):
+        return {
+            ConfigKey.BARRIER_COUNT: 4,
+            ConfigKey.BARRIER_WIDTH: 50,
+            ConfigKey.BARRIER_HEIGHT: 30,
         }

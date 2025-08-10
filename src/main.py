@@ -103,7 +103,6 @@ class Game:
                             self.player.shoot(bullet)
                     if event.type == PLAYER_REVIVE_EVENT:
                         self.player.revive()
-                        
 
                     if event.type == RESPAWN_ENEMIES_LIST:
                         self.enemy_formation.respawn_enemies_list()
@@ -140,7 +139,7 @@ class Game:
                                     self.enemy_formation.respawn_timer,
                                     1,
                                 )
-                            
+
                             break
                 for bullet in player_bullets_to_remove:
                     self.player.bullets.remove(bullet)
