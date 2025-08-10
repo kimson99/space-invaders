@@ -47,6 +47,8 @@ class ConfigKey(Enum):
     BARRIER_COUNT = "barrier-count"
     BARRIER_WIDTH = "barrier-width"
     BARRIER_HEIGHT = "barrier-height"
+    BARRIER_DAMAGED_WIDTH = "barrier-damaged-width"
+    BARRIER_DAMAGED_HEIGHT = "barrier-damaged-height"
 
 
 class Config:
@@ -111,6 +113,8 @@ class Config:
     def barrier_config(self):
         return {
             ConfigKey.BARRIER_COUNT: 4,
-            ConfigKey.BARRIER_WIDTH: 50,
+            ConfigKey.BARRIER_WIDTH: 80,
             ConfigKey.BARRIER_HEIGHT: 30,
+            ConfigKey.BARRIER_DAMAGED_WIDTH: 30,
+            ConfigKey.BARRIER_DAMAGED_HEIGHT: 30,
         }

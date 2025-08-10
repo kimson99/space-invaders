@@ -1,6 +1,7 @@
 import pygame
 from player import Player
 from enemy import *
+from barrier import Barrier
 from sprite_manager import SpriteManager, SpriteKey
 from config import Config, ConfigKey
 from event import *
@@ -23,6 +24,7 @@ class Game:
         asset_config = config.asset_config()
         gameplay_config = config.gameplay_config()
         enemy_config = config.enemy_formation_config()
+        barrier_config = config.barrier_config()
 
         self.gameplay_config = gameplay_config
         self.current_scene = GameScene.MAIN_MENU
@@ -67,6 +69,27 @@ class Game:
 
         self.player_bullet_sprites = sprite_manager.get_sprites(SpriteKey.PLAYER_BULLET)
         self.enemy_bullet_sprites = sprite_manager.get_sprites(SpriteKey.ENEMY_BULLET)
+
+        # Calculate barriers start x to space them evenly
+        # Using player position and double barrier height for y
+        barrier_count = barrier_config[ConfigKey.BARRIER_COUNT]
+        barrier_width = barrier_config[ConfigKey.BARRIER_WIDTH]
+        barrier_spacing = (
+            self.screen.get_width() - (barrier_count * barrier_width)
+        ) / (barrier_count + 1)
+        self.barriers = [
+            Barrier(
+                sprites=sprite_manager.get_sprites(SpriteKey.BARRIER),
+                damaged_sprite=sprite_manager.get_sprites(SpriteKey.BARRIER_DAMAGED)[0],
+                position=(
+                    barrier_spacing + i * (barrier_width + barrier_spacing),
+                    self.screen.get_height()
+                    - gameplay_config[ConfigKey.PLAYER_START_Y_OFFSET]
+                    - barrier_config[ConfigKey.BARRIER_HEIGHT] * 2,
+                ),
+            )
+            for i in range(0, 4)
+        ]
 
     def start(self):
         while self.is_running:
@@ -117,19 +140,23 @@ class Game:
                 pass
             case GameScene.PLAYING:
                 # Bullet
-                player_bullets_to_remove = []
+                player_bullets_to_remove: dict[Bullet, int] = {}
                 for bullet in self.player.bullets:
-                    if bullet.is_out_of_bound(0, self.screen.get_height()):
-                        player_bullets_to_remove.append(bullet)
-                        continue
                     bullet.move_vertically(self.delta_time * bullet.speed * -1)
+
+                    # Out of bound
+                    if bullet.is_out_of_bound(0, self.screen.get_height()):
+                        player_bullets_to_remove[bullet] = 1
+                        continue
+
+                    # Enemy collision
                     for col in self.enemy_formation.enemies:
                         collide_list = bullet.rect.collidelistall(col)
                         if len(collide_list) > 0:
                             hit_enemy = col[collide_list[0]]
                             self.player.score += hit_enemy.point
                             col.remove(hit_enemy)
-                            player_bullets_to_remove.append(bullet)
+                            player_bullets_to_remove[bullet] = 1
                             self.enemy_formation.enemy_count -= 1
                             if self.enemy_formation.enemy_count == 0:
                                 self.enemy_formation.despawn_bullets()
@@ -139,17 +166,31 @@ class Game:
                                     self.enemy_formation.respawn_timer,
                                     1,
                                 )
-
                             break
+                    # Barrier collision
+                    for barrier in self.barriers:
+                        collide_point = barrier.mask.overlap(
+                            bullet.mask,
+                            (
+                                bullet.rect.x - barrier.rect.x,
+                                bullet.rect.y - barrier.rect.y,
+                            ),
+                        )
+                        if collide_point is not None:
+                            barrier.handle_damage(collide_point=collide_point)
+                            player_bullets_to_remove[bullet] = 1
+
                 for bullet in player_bullets_to_remove:
                     self.player.bullets.remove(bullet)
 
-                enemy_bullets_to_remove = []
+                enemy_bullets_to_remove: dict[Bullet, int] = {}
                 for bullet in self.enemy_formation.bullets:
-                    if bullet.is_out_of_bound(0, self.screen.get_height()):
-                        enemy_bullets_to_remove.append(bullet)
-                        continue
                     bullet.move_vertically(self.delta_time * bullet.speed)
+                    # Out of bound
+                    if bullet.is_out_of_bound(0, self.screen.get_height()):
+                        enemy_bullets_to_remove[bullet] = 1
+                        continue
+                    # Player collision
                     if bullet.rect.colliderect(self.player):
                         self.player.lose_life()
 
@@ -161,7 +202,19 @@ class Game:
                                 PLAYER_REVIVE_EVENT, self.player.death_timer_ms, 1
                             )
 
-                        enemy_bullets_to_remove.append(bullet)
+                        enemy_bullets_to_remove[bullet] = 1
+                    # Barrier collision
+                    for barrier in self.barriers:
+                        collide_point = barrier.mask.overlap(
+                            bullet.mask,
+                            (
+                                bullet.rect.x - barrier.rect.x,
+                                bullet.rect.y - barrier.rect.y,
+                            ),
+                        )
+                        if collide_point is not None:
+                            barrier.handle_damage(collide_point=collide_point)
+                            enemy_bullets_to_remove[bullet] = 1
 
                 for bullet in enemy_bullets_to_remove:
                     self.enemy_formation.bullets.remove(bullet)
@@ -218,6 +271,9 @@ class Game:
                 self.player.render(self.screen)
 
                 self.enemy_formation.render(self.screen, delta_time=self.delta_time)
+
+                for barrier in self.barriers:
+                    barrier.render(surface=self.screen)
 
                 # UI
                 score_surface = self.base_pixel_font.render(

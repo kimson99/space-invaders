@@ -13,13 +13,16 @@ class Bullet(pygame.sprite.Sprite):
         speed=50,
         source: BulletSource = BulletSource.PLAYER.value,
     ):
+        pygame.sprite.Sprite.__init__(self)
         self.position = position
         self.size = size
         self.speed = speed
         self.source = source
 
         self.sprites = [pygame.transform.scale(sprite, size) for sprite in sprites]
-        self.rect = self.sprites[0].get_rect()
+        self.curr_sprite_index = 0
+        self.rect = self.sprites[self.curr_sprite_index].get_rect()
+        self.mask = pygame.mask.from_surface(self.sprites[self.curr_sprite_index])
         self.rect.x = position.x
         self.rect.y = position.y
 
@@ -30,4 +33,4 @@ class Bullet(pygame.sprite.Sprite):
         self.rect.y += distance
 
     def render(self, surface):
-        surface.blit(self.sprites[0], self.rect)
+        surface.blit(self.sprites[self.curr_sprite_index], self.rect)
