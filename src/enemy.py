@@ -125,6 +125,9 @@ class EnemyFormation:
             if move_down_distance is not None
             else formation_config[ConfigKey.ENEMY_FORMATION_MOVE_DOWN_DISTANCE]
         )
+        # To prevent moving down immediately on start
+        self.can_move_down = False
+
         self.enemy_col = (
             enemy_col
             if enemy_col is not None
@@ -279,18 +282,20 @@ class EnemyFormation:
             self.current_step -= delta_time
             return
 
-        for row in self.enemies:
-            for enemy in row:
-                enemy.move_horizontally(enemy.size[0] * self.horizontal_direction)
-
-        pygame.mixer.Sound.play(self.move_sounds[self.move_sound_index])
-        self.move_sound_index += 1
-        if self.move_sound_index > self.move_sound_max_index:
-            self.move_sound_index = 0
-
-        if self.is_past_horizontal_bound():
+        if self.is_past_horizontal_bound() and self.can_move_down:       
             self.reverse_direction()
             self.move_down()
+            self.can_move_down = False
+        else:
+            for row in self.enemies:
+                for enemy in row:
+                    enemy.move_horizontally(enemy.size[0] * self.horizontal_direction)
+                    pygame.mixer.Sound.play(self.move_sounds[self.move_sound_index])
+            self.move_sound_index += 1
+            if self.move_sound_index > self.move_sound_max_index:
+                self.move_sound_index = 0
+            self.can_move_down = True
+
         self.current_step = self.step_interval
 
     def move_by_delta_time(self, delta_time: float):

@@ -128,8 +128,8 @@ class Config:
             ConfigKey.ENEMY_MAX_BULLETS: 3,
             ConfigKey.ENEMY_MIN_FIRING_COOLDOWN: 1,
             ConfigKey.ENEMY_MAX_FIRING_COOLDOWN: 2,
-            ConfigKey.ENEMY_STEP_INTERVAL: 0.5,
-            ConfigKey.ENEMY_ANIMATION_INTERVAL: 0.5,
+            ConfigKey.ENEMY_STEP_INTERVAL: 1,
+            ConfigKey.ENEMY_ANIMATION_INTERVAL: 1,
         }
 
     def barrier_config(self):
