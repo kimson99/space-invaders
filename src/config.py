@@ -6,6 +6,8 @@ class ConfigKey(Enum):
     SCREEN_WIDTH = "screen-width"
     SCREEN_HEIGHT = "screen-height"
     FPS = "FPS"
+    SCREEN_COLOR = "screen-color"
+    TEXT_COLOR = "text-color"
 
     # Font
     FONT_PATH = "font-path"
@@ -14,6 +16,14 @@ class ConfigKey(Enum):
 
     # Sprite
     SPRITESHEET_PATH = "spritesheet-path"
+
+    # Sound
+    ENEMY_MOVE_SOUND_1 = "enemy-move-sound-1"
+    ENEMY_MOVE_SOUND_2 = "enemy-move-sound-2"
+    ENEMY_MOVE_SOUND_3 = "enemy-move-sound-3"
+    ENEMY_MOVE_SOUND_4 = "enemy-move-sound-4"
+    PLAYER_SHOOT_SOUND = "player-shoot-sound"
+    PLAYER_DEATH_SOUND = "player-death-sound"
 
     # Enemy
     ENEMY_ROW = "enemy-row"
@@ -60,6 +70,8 @@ class Config:
             ConfigKey.SCREEN_WIDTH: 600,
             ConfigKey.SCREEN_HEIGHT: 800,
             ConfigKey.FPS: 60,
+            ConfigKey.SCREEN_COLOR: "black",
+            ConfigKey.TEXT_COLOR: "white",
         }
 
     def font_config(self):
@@ -72,6 +84,16 @@ class Config:
     def asset_config(self):
         return {
             ConfigKey.SPRITESHEET_PATH: "./assets/sprites/SpaceInvadersSpriteSheet.png",
+        }
+
+    def sound_config(self):
+        return {
+            ConfigKey.ENEMY_MOVE_SOUND_1: "./assets/audios/fastinvader1.wav",
+            ConfigKey.ENEMY_MOVE_SOUND_2: "./assets/audios/fastinvader2.wav",
+            ConfigKey.ENEMY_MOVE_SOUND_3: "./assets/audios/fastinvader3.wav",
+            ConfigKey.ENEMY_MOVE_SOUND_4: "./assets/audios/fastinvader4.wav",
+            ConfigKey.PLAYER_SHOOT_SOUND: "./assets/audios/shoot.wav",
+            ConfigKey.PLAYER_DEATH_SOUND: "./assets/audios/explosion.wav",
         }
 
     def gameplay_config(self):

@@ -27,6 +27,7 @@ class Game:
         barrier_config = config.barrier_config()
 
         self.gameplay_config = gameplay_config
+        self.display_config = display_config
         self.current_scene = GameScene.MAIN_MENU
 
         self.screen = pygame.display.set_mode(
@@ -88,7 +89,7 @@ class Game:
                     - barrier_config[ConfigKey.BARRIER_HEIGHT] * 2,
                 ),
             )
-            for i in range(0, 4)
+            for i in range(0, barrier_count)
         ]
 
     def start(self):
@@ -139,183 +140,217 @@ class Game:
             case GameScene.MAIN_MENU:
                 pass
             case GameScene.PLAYING:
-                # Bullet
-                player_bullets_to_remove: dict[Bullet, int] = {}
-                for bullet in self.player.bullets:
-                    bullet.move_vertically(self.delta_time * bullet.speed * -1)
+                self.update_bullets()
+                self.update_player()
+                self.update_enemies()
+                self.update_player_collisions()
 
-                    # Out of bound
-                    if bullet.is_out_of_bound(0, self.screen.get_height()):
-                        player_bullets_to_remove[bullet] = 1
-                        continue
+    def update_bullets(self):
+        self.update_player_bullets()
+        self.update_enemy_bullets()
 
-                    # Enemy collision
-                    for col in self.enemy_formation.enemies:
-                        collide_list = bullet.rect.collidelistall(col)
-                        if len(collide_list) > 0:
-                            hit_enemy = col[collide_list[0]]
-                            self.player.score += hit_enemy.point
-                            col.remove(hit_enemy)
-                            player_bullets_to_remove[bullet] = 1
-                            self.enemy_formation.enemy_count -= 1
-                            if self.enemy_formation.enemy_count == 0:
-                                self.enemy_formation.despawn_bullets()
-                                self.enemy_formation.stop_moving()
-                                pygame.time.set_timer(
-                                    RESPAWN_ENEMIES_LIST,
-                                    self.enemy_formation.respawn_timer,
-                                    1,
-                                )
-                            break
-                    # Barrier collision
-                    for barrier in self.barriers:
-                        collide_point = barrier.mask.overlap(
-                            bullet.mask,
-                            (
-                                bullet.rect.x - barrier.rect.x,
-                                bullet.rect.y - barrier.rect.y,
-                            ),
+    def update_player_bullets(self):
+        player_bullets_to_remove: dict[Bullet, int] = {}
+        for bullet in self.player.bullets:
+            bullet.move_vertically(self.delta_time * bullet.speed * -1)
+
+            # Out of bound
+            if bullet.is_out_of_bound(0, self.screen.get_height()):
+                player_bullets_to_remove[bullet] = 1
+                continue
+
+            # Enemy collision
+            for col in self.enemy_formation.enemies:
+                collide_list = bullet.rect.collidelistall(col)
+                if len(collide_list) > 0:
+                    hit_enemy = col[collide_list[0]]
+                    self.player.score += hit_enemy.point
+                    col.remove(hit_enemy)
+                    player_bullets_to_remove[bullet] = 1
+                    self.enemy_formation.enemy_count -= 1
+                    if self.enemy_formation.enemy_count == 0:
+                        self.enemy_formation.despawn_bullets()
+                        self.enemy_formation.stop_moving()
+                        pygame.time.set_timer(
+                            RESPAWN_ENEMIES_LIST,
+                            self.enemy_formation.respawn_timer,
+                            1,
                         )
-                        if collide_point is not None:
-                            barrier.handle_damage(collide_point=collide_point)
-                            player_bullets_to_remove[bullet] = 1
-
-                for bullet in player_bullets_to_remove:
-                    self.player.bullets.remove(bullet)
-
-                enemy_bullets_to_remove: dict[Bullet, int] = {}
-                for bullet in self.enemy_formation.bullets:
-                    bullet.move_vertically(self.delta_time * bullet.speed)
-                    # Out of bound
-                    if bullet.is_out_of_bound(0, self.screen.get_height()):
-                        enemy_bullets_to_remove[bullet] = 1
-                        continue
-                    # Player collision
-                    if bullet.rect.colliderect(self.player):
-                        self.player.lose_life()
-
-                        if self.player.lives <= 0:
-                            self.delta_time = 0
-                            self.is_game_over = True
-                        else:
-                            pygame.time.set_timer(
-                                PLAYER_REVIVE_EVENT, self.player.death_timer_ms, 1
-                            )
-
-                        enemy_bullets_to_remove[bullet] = 1
-                    # Barrier collision
-                    for barrier in self.barriers:
-                        collide_point = barrier.mask.overlap(
-                            bullet.mask,
-                            (
-                                bullet.rect.x - barrier.rect.x,
-                                bullet.rect.y - barrier.rect.y,
-                            ),
-                        )
-                        if collide_point is not None:
-                            barrier.handle_damage(collide_point=collide_point)
-                            enemy_bullets_to_remove[bullet] = 1
-
-                for bullet in enemy_bullets_to_remove:
-                    self.enemy_formation.bullets.remove(bullet)
-
-                # Player
-                keys_pressed = pygame.key.get_pressed()
-                if keys_pressed[pygame.K_a] or keys_pressed[pygame.K_LEFT]:
-                    self.player.move_left(
-                        delta_time=self.delta_time, left_limit=self.playable_area_offset
-                    )
-                if keys_pressed[pygame.K_d] or keys_pressed[pygame.K_RIGHT]:
-                    self.player.move_right(
-                        self.delta_time,
-                        right_limit=self.screen.get_width()
-                        - self.playable_area_offset
-                        - self.player.size[0],
-                    )
-
-                # Enemy
-                self.enemy_formation.auto_move(delta_time=self.delta_time, mode="step")
-                self.enemy_formation.auto_shoot(
-                    delta_time=self.delta_time,
-                    sprites=self.enemy_bullet_sprites,
-                    speed=self.gameplay_config[ConfigKey.ENEMY_BULLET_SPEED],
-                )
-
-                if self.enemy_formation.collide_player(self.player):
-                    self.player.lose_life()
-                    if self.player.lives <= 0:
-                        self.delta_time = 0
-                        self.is_game_over = True
-
-    def render(self):
-        self.screen.fill("black")
-        match self.current_scene:
-            case GameScene.MAIN_MENU:
-                play_surface = self.large_pixel_font.render(
-                    f"PRESS  ENTER  TO  PLAY", (0, 0, 0, 0), "white"
-                )
-                self.screen.blit(
-                    play_surface,
+                    break
+            # Barrier collision
+            for barrier in self.barriers:
+                collide_point = barrier.mask.overlap(
+                    bullet.mask,
                     (
-                        (self.screen.get_width() - play_surface.get_width()) / 2,
-                        self.screen.get_height() / 2 - play_surface.get_height(),
+                        bullet.rect.x - barrier.rect.x,
+                        bullet.rect.y - barrier.rect.y,
                     ),
                 )
+                if collide_point is not None:
+                    barrier.handle_damage(collide_point=collide_point)
+                    player_bullets_to_remove[bullet] = 1
+
+        for bullet in player_bullets_to_remove:
+            self.player.bullets.remove(bullet)
+
+    def update_enemy_bullets(self):
+        enemy_bullets_to_remove: dict[Bullet, int] = {}
+        for bullet in self.enemy_formation.bullets:
+            bullet.move_vertically(self.delta_time * bullet.speed)
+            # Out of bound
+            if bullet.is_out_of_bound(0, self.screen.get_height()):
+                enemy_bullets_to_remove[bullet] = 1
+                continue
+            # Player collision
+            if bullet.rect.colliderect(self.player):
+                self.player.lose_life()
+
+                if self.player.lives <= 0:
+                    self.delta_time = 0
+                    self.is_game_over = True
+                else:
+                    pygame.time.set_timer(
+                        PLAYER_REVIVE_EVENT, self.player.death_timer_ms, 1
+                    )
+
+                enemy_bullets_to_remove[bullet] = 1
+            # Barrier collision
+            for barrier in self.barriers:
+                collide_point = barrier.mask.overlap(
+                    bullet.mask,
+                    (
+                        bullet.rect.x - barrier.rect.x,
+                        bullet.rect.y - barrier.rect.y,
+                    ),
+                )
+                if collide_point is not None:
+                    barrier.handle_damage(collide_point=collide_point)
+                    enemy_bullets_to_remove[bullet] = 1
+
+        for bullet in enemy_bullets_to_remove:
+            self.enemy_formation.bullets.remove(bullet)
+
+    def update_player(self):
+        keys_pressed = pygame.key.get_pressed()
+        if keys_pressed[pygame.K_a] or keys_pressed[pygame.K_LEFT]:
+            self.player.move_left(
+                delta_time=self.delta_time, left_limit=self.playable_area_offset
+            )
+        if keys_pressed[pygame.K_d] or keys_pressed[pygame.K_RIGHT]:
+            self.player.move_right(
+                self.delta_time,
+                right_limit=self.screen.get_width()
+                - self.playable_area_offset
+                - self.player.size[0],
+            )
+
+    def update_enemies(self):
+        self.enemy_formation.auto_move(delta_time=self.delta_time, mode="step")
+        self.enemy_formation.auto_shoot(
+            delta_time=self.delta_time,
+            sprites=self.enemy_bullet_sprites,
+            speed=self.gameplay_config[ConfigKey.ENEMY_BULLET_SPEED],
+        )
+
+    def update_player_collisions(self):
+        if self.enemy_formation.collide_player(self.player):
+            self.player.lose_life()
+            if self.player.lives <= 0:
+                self.delta_time = 0
+                self.is_game_over = True
+
+    def render(self):
+        self.screen.fill(self.display_config[ConfigKey.SCREEN_COLOR])
+        match self.current_scene:
+            case GameScene.MAIN_MENU:
+                self.render_main_menu()
             case GameScene.PLAYING:
-                for bullet in self.player.bullets:
-                    bullet.render(self.screen)
-
-                for bullet in self.enemy_formation.bullets:
-                    bullet.render(self.screen)
-
-                self.player.render(self.screen)
-
-                self.enemy_formation.render(self.screen, delta_time=self.delta_time)
-
-                for barrier in self.barriers:
-                    barrier.render(surface=self.screen)
-
-                # UI
-                score_surface = self.base_pixel_font.render(
-                    f"SCORE {self.player.score}", (0, 0, 0, 0), "white"
-                )
-                lives_surface = self.base_pixel_font.render(
-                    f"LIVES {self.player.lives}", (0, 0, 0, 0), "white"
-                )
-                game_over_surface = self.large_pixel_font.render(
-                    f"GAME OVER!", (0, 0, 0, 0), "white"
-                )
-                self.screen.blit(score_surface, (0, 0))
-                self.screen.blit(
-                    lives_surface,
-                    (self.screen.get_width() - lives_surface.get_width(), 0),
-                )
-                if self.is_pause:
-                    pause_surface = self.base_pixel_font.render(
-                        f"PAUSED", (0, 0, 0, 0), "white"
-                    )
-                    self.screen.blit(
-                        pause_surface,
-                        (
-                            (self.screen.get_width() - pause_surface.get_width()) / 2,
-                            self.screen.get_height() / 2 - pause_surface.get_height(),
-                        ),
-                    )
-                if self.is_game_over:
-                    self.screen.blit(
-                        game_over_surface,
-                        (
-                            (self.screen.get_width() - game_over_surface.get_width())
-                            / 2,
-                            self.screen.get_height() / 2
-                            - game_over_surface.get_height(),
-                        ),
-                    )
+                self.render_playing_scene()
 
         pygame.display.flip()
 
         if not self.is_game_over:
             self.delta_time = self.clock.tick(self.FPS) / 1000
+
+    def render_main_menu(self):
+        play_surface = self.large_pixel_font.render(
+            f"PRESS  ENTER  TO  PLAY",
+            (0, 0, 0, 0),
+            self.display_config[ConfigKey.TEXT_COLOR],
+        )
+        self.screen.blit(
+            play_surface,
+            (
+                (self.screen.get_width() - play_surface.get_width()) / 2,
+                self.screen.get_height() / 2 - play_surface.get_height(),
+            ),
+        )
+
+    def render_playing_scene(self):
+        self.render_game_objects()
+        self.render_ui()
+
+    def render_game_objects(self):
+        for bullet in self.player.bullets:
+            bullet.render(self.screen)
+
+        for bullet in self.enemy_formation.bullets:
+            bullet.render(self.screen)
+
+        self.player.render(self.screen)
+
+        self.enemy_formation.render(self.screen, delta_time=self.delta_time)
+
+        for barrier in self.barriers:
+            barrier.render(surface=self.screen)
+
+    def render_ui(self):
+        self.render_score_and_lives()
+        self.render_pause_screen()
+        self.render_game_over_screen()
+
+    def render_score_and_lives(self):
+        score_surface = self.base_pixel_font.render(
+            f"SCORE {self.player.score}",
+            (0, 0, 0, 0),
+            self.display_config[ConfigKey.TEXT_COLOR],
+        )
+        lives_surface = self.base_pixel_font.render(
+            f"LIVES {self.player.lives}",
+            (0, 0, 0, 0),
+            self.display_config[ConfigKey.TEXT_COLOR],
+        )
+        self.screen.blit(score_surface, (0, 0))
+        self.screen.blit(
+            lives_surface,
+            (self.screen.get_width() - lives_surface.get_width(), 0),
+        )
+
+    def render_pause_screen(self):
+        if self.is_pause:
+            pause_surface = self.base_pixel_font.render(
+                f"PAUSED", (0, 0, 0, 0), self.display_config[ConfigKey.TEXT_COLOR]
+            )
+            self.screen.blit(
+                pause_surface,
+                (
+                    (self.screen.get_width() - pause_surface.get_width()) / 2,
+                    self.screen.get_height() / 2 - pause_surface.get_height(),
+                ),
+            )
+
+    def render_game_over_screen(self):
+        if self.is_game_over:
+            game_over_surface = self.large_pixel_font.render(
+                f"GAME OVER!", (0, 0, 0, 0), self.display_config[ConfigKey.TEXT_COLOR]
+            )
+            self.screen.blit(
+                game_over_surface,
+                (
+                    (self.screen.get_width() - game_over_surface.get_width()) / 2,
+                    self.screen.get_height() / 2 - game_over_surface.get_height(),
+                ),
+            )
 
 
 game = Game()

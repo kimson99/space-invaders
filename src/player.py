@@ -46,8 +46,13 @@ class Player(pygame.sprite.Sprite):
         self.rect.x = position.x
         self.rect.y = position.y
 
-        self.shoot_sound = pygame.mixer.Sound("./assets/audios/shoot.wav")
-        self.death_sound = pygame.mixer.Sound("./assets/audios/explosion.wav")
+        sound_config = config.sound_config()
+        self.shoot_sound = pygame.mixer.Sound(
+            sound_config[ConfigKey.PLAYER_SHOOT_SOUND]
+        )
+        self.death_sound = pygame.mixer.Sound(
+            sound_config[ConfigKey.PLAYER_DEATH_SOUND]
+        )
 
     def move_left(self, delta_time: float, left_limit: float):
         self.rect.x = max(self.rect.x - self.speed * delta_time, left_limit)

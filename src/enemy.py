@@ -191,11 +191,12 @@ class EnemyFormation:
             SpriteKey.SQUID_ENEMY: squid_sprites,
         }
 
+        sound_config = config.sound_config()
         self.move_sounds = [
-            pygame.mixer.Sound("./assets/audios/fastinvader1.wav"),
-            pygame.mixer.Sound("./assets/audios/fastinvader2.wav"),
-            pygame.mixer.Sound("./assets/audios/fastinvader3.wav"),
-            pygame.mixer.Sound("./assets/audios/fastinvader4.wav"),
+            pygame.mixer.Sound(sound_config[ConfigKey.ENEMY_MOVE_SOUND_1]),
+            pygame.mixer.Sound(sound_config[ConfigKey.ENEMY_MOVE_SOUND_2]),
+            pygame.mixer.Sound(sound_config[ConfigKey.ENEMY_MOVE_SOUND_3]),
+            pygame.mixer.Sound(sound_config[ConfigKey.ENEMY_MOVE_SOUND_4]),
         ]
         self.move_sound_index = 0
         self.move_sound_max_index = len(self.move_sounds) - 1
