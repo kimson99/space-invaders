@@ -1,4 +1,5 @@
 import pygame
+from config import Config, ConfigKey
 from enum import Enum
 
 BulletSource = Enum("BulletSource", [("PLAYER", 1), ("ENEMY", 2)])
@@ -9,17 +10,20 @@ class Bullet(pygame.sprite.Sprite):
         self,
         sprites: list[pygame.Surface],
         position: pygame.Vector2,
-        size: tuple[int, int] = (5, 15),
-        speed=50,
+        speed: float,
+        size: tuple[int, int] | None = None,
         source: BulletSource = BulletSource.PLAYER.value,
     ):
         pygame.sprite.Sprite.__init__(self)
+        config = Config()
+        gameplay_config = config.gameplay_config()
+        
         self.position = position
-        self.size = size
+        self.size = size if size is not None else (gameplay_config[ConfigKey.BULLET_WIDTH], gameplay_config[ConfigKey.BULLET_HEIGHT]) 
         self.speed = speed
         self.source = source
 
-        self.sprites = [pygame.transform.scale(sprite, size) for sprite in sprites]
+        self.sprites = [pygame.transform.scale(sprite, self.size) for sprite in sprites]
         self.curr_sprite_index = 0
         self.rect = self.sprites[self.curr_sprite_index].get_rect()
         self.mask = pygame.mask.from_surface(self.sprites[self.curr_sprite_index])

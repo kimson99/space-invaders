@@ -52,6 +52,8 @@ class ConfigKey(Enum):
     # Bullet
     PLAYER_BULLET_SPEED = "player-bullet-speed"
     ENEMY_BULLET_SPEED = "enemy-bullet-speed"
+    BULLET_WIDTH = "bullet-width"
+    BULLET_HEIGHT = "bullet-height"
 
     # Barrier
     BARRIER_COUNT = "barrier-count"
@@ -104,6 +106,8 @@ class Config:
             # Bullet
             ConfigKey.ENEMY_BULLET_SPEED: 300,
             ConfigKey.PLAYER_BULLET_SPEED: 500,
+            ConfigKey.BULLET_WIDTH: 8,
+            ConfigKey.BULLET_HEIGHT: 20,
         }
 
     def player_config(self):
