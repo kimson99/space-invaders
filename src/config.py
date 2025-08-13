@@ -78,7 +78,7 @@ class Config:
 
     def font_config(self):
         return {
-            ConfigKey.FONT_PATH: "./assets/fonts/ARCADECLASSIC.TTF",
+            ConfigKey.FONT_PATH: "./assets/fonts/pixel-game.regular.otf",
             ConfigKey.BASE_FONT_SIZE: 26,
             ConfigKey.LARGE_FONT_SIZE: 40,
         }

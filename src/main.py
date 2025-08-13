@@ -28,7 +28,10 @@ class Game:
 
         self.gameplay_config = gameplay_config
         self.display_config = display_config
+        self.barrier_config = barrier_config
+        self.enemy_config = enemy_config
         self.current_scene = GameScene.MAIN_MENU
+        self.high_score = 0
 
         self.screen = pygame.display.set_mode(
             (
@@ -50,43 +53,49 @@ class Game:
         )
 
         sprite_manager = SpriteManager(asset_config[ConfigKey.SPRITESHEET_PATH])
-
-        player_start_pos = pygame.Vector2(
-            self.screen.get_width() / 2,
-            self.screen.get_height() - gameplay_config[ConfigKey.PLAYER_START_Y_OFFSET],
-        )
-        self.playable_area_offset = gameplay_config[ConfigKey.PLAYABLE_AREA_OFFSET]
-        player_sprites = sprite_manager.get_sprites(SpriteKey.PLAYER)
-        self.player = Player(position=player_start_pos, sprites=player_sprites)
-
-        self.enemy_formation = EnemyFormation(
-            left_limit=enemy_config[ConfigKey.ENEMY_SIZE_WIDTH],
-            right_limit=self.screen.get_width()
-            - enemy_config[ConfigKey.ENEMY_SIZE_WIDTH],
-            sprite_manager=sprite_manager,
-            config=config,
-            enemy_start_pos=pygame.Vector2(5, self.screen.get_height() / 3),
-        )
+        self.sprite_manager = sprite_manager
 
         self.player_bullet_sprites = sprite_manager.get_sprites(SpriteKey.PLAYER_BULLET)
         self.enemy_bullet_sprites = sprite_manager.get_sprites(SpriteKey.ENEMY_BULLET)
+        self.init_player()
+        self.init_enemies()
+        self.init_barriers()
+        
+    def init_player(self):
+        player_start_pos = pygame.Vector2(
+            self.screen.get_width() / 2,
+            self.screen.get_height() - self.gameplay_config[ConfigKey.PLAYER_START_Y_OFFSET],
+        )
+        self.playable_area_offset = self.gameplay_config[ConfigKey.PLAYABLE_AREA_OFFSET]
+        player_sprites = self.sprite_manager.get_sprites(SpriteKey.PLAYER)
+        self.player = Player(position=player_start_pos, sprites=player_sprites)
 
+    def init_enemies(self):
+        self.enemy_formation = EnemyFormation(
+            left_limit=self.enemy_config[ConfigKey.ENEMY_SIZE_WIDTH],
+            right_limit=self.screen.get_width()
+            - self.enemy_config[ConfigKey.ENEMY_SIZE_WIDTH],
+            sprite_manager=self.sprite_manager,
+            enemy_start_pos=pygame.Vector2(5, self.screen.get_height() / 3),
+        )
+
+    def init_barriers(self):
         # Calculate barriers start x to space them evenly
         # Using player position and double barrier height for y
-        barrier_count = barrier_config[ConfigKey.BARRIER_COUNT]
-        barrier_width = barrier_config[ConfigKey.BARRIER_WIDTH]
+        barrier_count = self.barrier_config[ConfigKey.BARRIER_COUNT]
+        barrier_width = self.barrier_config[ConfigKey.BARRIER_WIDTH]
         barrier_spacing = (
             self.screen.get_width() - (barrier_count * barrier_width)
         ) / (barrier_count + 1)
         self.barriers = [
             Barrier(
-                sprites=sprite_manager.get_sprites(SpriteKey.BARRIER),
-                damaged_sprite=sprite_manager.get_sprites(SpriteKey.BARRIER_DAMAGED)[0],
+                sprites=self.sprite_manager.get_sprites(SpriteKey.BARRIER),
+                damaged_sprite=self.sprite_manager.get_sprites(SpriteKey.BARRIER_DAMAGED)[0],
                 position=(
                     barrier_spacing + i * (barrier_width + barrier_spacing),
                     self.screen.get_height()
-                    - gameplay_config[ConfigKey.PLAYER_START_Y_OFFSET]
-                    - barrier_config[ConfigKey.BARRIER_HEIGHT] * 2,
+                    - self.gameplay_config[ConfigKey.PLAYER_START_Y_OFFSET]
+                    - self.barrier_config[ConfigKey.BARRIER_HEIGHT] * 2,
                 ),
             )
             for i in range(0, barrier_count)
@@ -125,6 +134,9 @@ class Game:
                                 sprites=self.player_bullet_sprites,
                             )
                             self.player.shoot(bullet)
+                        if event.key == pygame.K_RETURN and self.is_game_over:
+                            self.restart()
+
                     if event.type == PLAYER_REVIVE_EVENT:
                         self.player.revive()
 
@@ -315,12 +327,18 @@ class Game:
             (0, 0, 0, 0),
             self.display_config[ConfigKey.TEXT_COLOR],
         )
+        hi_score_surface = self.base_pixel_font.render(
+            f" | HI-SCORE {self.high_score}",
+            (0, 0, 0, 0),
+            self.display_config[ConfigKey.TEXT_COLOR],
+        )
         lives_surface = self.base_pixel_font.render(
             f"LIVES {self.player.lives}",
             (0, 0, 0, 0),
             self.display_config[ConfigKey.TEXT_COLOR],
         )
         self.screen.blit(score_surface, (0, 0))
+        self.screen.blit(hi_score_surface, (score_surface.get_width(), 0))
         self.screen.blit(
             lives_surface,
             (self.screen.get_width() - lives_surface.get_width(), 0),
@@ -344,6 +362,9 @@ class Game:
             game_over_surface = self.large_pixel_font.render(
                 f"GAME OVER!", (0, 0, 0, 0), self.display_config[ConfigKey.TEXT_COLOR]
             )
+            subtext_surface = self.base_pixel_font.render(
+                f"Press  ENTER  to  restart", (0, 0, 0, 0), self.display_config[ConfigKey.TEXT_COLOR]
+            )
             self.screen.blit(
                 game_over_surface,
                 (
@@ -351,7 +372,20 @@ class Game:
                     self.screen.get_height() / 2 - game_over_surface.get_height(),
                 ),
             )
+            self.screen.blit(
+                subtext_surface,
+                (
+                    (self.screen.get_width() - subtext_surface.get_width()) / 2,
+                    self.screen.get_height() / 2 - subtext_surface.get_height() + game_over_surface.get_height(),
+                ),
+            )
 
+    def restart(self):
+        self.high_score = self.player.score if self.player.score > self.high_score else self.high_score
+        self.init_player()
+        self.init_enemies()
+        self.init_barriers()
+        self.is_game_over = False
 
 game = Game()
 game.start()
