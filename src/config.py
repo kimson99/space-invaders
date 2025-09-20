@@ -8,6 +8,8 @@ class ConfigKey(Enum):
     FPS = "FPS"
     SCREEN_COLOR = "screen-color"
     TEXT_COLOR = "text-color"
+    GAME_ICON_PATH = "game-icon-path"
+    GAME_TITLE = "game-title"
 
     # Font
     FONT_PATH = "font-path"
@@ -74,6 +76,8 @@ class Config:
             ConfigKey.FPS: 60,
             ConfigKey.SCREEN_COLOR: "black",
             ConfigKey.TEXT_COLOR: "white",
+            ConfigKey.GAME_TITLE: "Space Invaders",
+            ConfigKey.GAME_ICON_PATH: "./assets/icon.png"
         }
 
     def font_config(self):

@@ -39,6 +39,9 @@ class Game:
                 display_config[ConfigKey.SCREEN_HEIGHT],
             )
         )
+        pygame.display.set_caption(display_config[ConfigKey.GAME_TITLE])
+        icon = pygame.image.load(display_config[ConfigKey.GAME_ICON_PATH])
+        pygame.display.set_icon(icon)
         self.FPS = display_config[ConfigKey.FPS]
         self.clock = pygame.time.Clock()
         self.delta_time = 0
