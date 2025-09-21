@@ -168,6 +168,7 @@ class EnemyFormation:
         ]
         self.step_interval = formation_config[ConfigKey.ENEMY_STEP_INTERVAL]
         self.current_step = formation_config[ConfigKey.ENEMY_STEP_INTERVAL]
+        self.wave_count = 0
 
         self.can_move = True
         self.enemy_count = self.enemy_col * self.enemy_row
@@ -210,6 +211,8 @@ class EnemyFormation:
         self.horizontal_direction = 1
         self.enemy_count = self.enemy_col * self.enemy_row
         self.enemies = [[None] * self.enemy_row for _ in range(0, self.enemy_col)]
+        self.can_move_down = False
+        self.wave_count = self.wave_count + 1
         self.create_enemies_list()
 
     def despawn_bullets(self):
@@ -279,7 +282,7 @@ class EnemyFormation:
 
     def move_by_step(self, delta_time=float):
         if self.current_step > 0:
-            self.current_step -= delta_time
+            self.current_step -= delta_time + self.wave_count * self.enemy_speed
             return
 
         if self.is_past_horizontal_bound() and self.can_move_down:       

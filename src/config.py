@@ -129,7 +129,7 @@ class Config:
             ConfigKey.ENEMY_COL: 5,
             ConfigKey.ENEMY_SIZE_WIDTH: 40,
             ConfigKey.ENEMY_SIZE_HEIGHT: 20,
-            ConfigKey.ENEMY_SPEED: 10,
+            ConfigKey.ENEMY_SPEED: 0.01,
             ConfigKey.ENEMY_FORMATION_GAP: 20,
             ConfigKey.ENEMY_FORMATION_MOVE_DOWN_DISTANCE: 20,
             ConfigKey.ENEMY_RESPAWN_TIMER_MS: 2000,
